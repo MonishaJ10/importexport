@@ -1,4 +1,62 @@
 @PostMapping("/upload")
+public ResponseEntity<Map<String, String>> upload(
+        @RequestParam("file") MultipartFile file,
+        @RequestParam("service") String service,
+        @RequestParam("overwrite") boolean overwrite) {
+    try {
+        String uploadDir = System.getProperty("user.home") + "/Downloads/";
+        Path targetPath = Paths.get(uploadDir + file.getOriginalFilename());
+
+        Files.createDirectories(targetPath.getParent());
+        Files.write(targetPath, file.getBytes(), StandardOpenOption.CREATE);
+
+        // Save metadata
+        ImportMetadata metadata = new ImportMetadata();
+        metadata.setFilename(file.getOriginalFilename());
+        metadata.setService(service);
+        metadata.setOverwriteFlag(overwrite ? 'Y' : 'N');
+        repository.save(metadata);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "File uploaded and metadata saved.");
+        return ResponseEntity.ok(response);
+    } catch (IOException e) {
+        e.printStackTrace();
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Upload failed: " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+}
+
+
+
+this.http.post<any>('http://localhost:8080/api/import/upload', formData).subscribe({
+  next: (response) => {
+    console.log('Upload success:', response);
+    alert(response.message); // ✅ now response.message will work
+  },
+  error: (error) => {
+    console.error('Upload error:', error);
+    alert('Upload failed: ' + (error.error?.error || 'Unknown error'));
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@PostMapping("/upload")
 public ResponseEntity<?> upload(
         @RequestParam("file") MultipartFile file,
         @RequestParam("service") String service,
