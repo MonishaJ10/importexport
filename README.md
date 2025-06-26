@@ -1,3 +1,9 @@
+
+System.out.println("File: " + file.getOriginalFilename());
+System.out.println("Service: " + service);
+System.out.println("Overwrite: " + overwrite);
+
+
 @GetMapping("/services")
 public ResponseEntity<List<String>> getAvailableServices() {
     List<String> services = List.of("Reconciliation", "CashManagement", "Securities"); // You can adjust these
