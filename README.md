@@ -1,3 +1,34 @@
+onUpload(): void {
+  if (!this.selectedFile || !this.selectedService) {
+    alert('Please select a file and service.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', this.selectedFile);
+  formData.append('service', this.selectedService);
+  formData.append('overwrite', this.overwrite.toString());
+
+  this.http.post<any>('http://localhost:8080/api/import/upload', formData).subscribe({
+    next: (response) => {
+      console.log('Upload success:', response);
+      alert(response.message); // shows: "File uploaded and metadata saved."
+    },
+    error: (error) => {
+      console.error('Upload error:', error);
+      alert('Upload failed: ' + (error.error?.error || 'Unknown error'));
+    }
+  });
+}
+
+
+
+
+
+
+
+
+
 @PostMapping("/upload")
 public ResponseEntity<Map<String, String>> upload(
         @RequestParam("file") MultipartFile file,
