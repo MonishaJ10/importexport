@@ -2,6 +2,129 @@
   <h2>Import-Export Manager</h2>
 
   <div class="top-bar">
+    <button mat-raised-button color="primary" [class.active]="selectedTab === 'import'" (click)="selectTab('import')">
+      <mat-icon>cloud_upload</mat-icon> New Import
+    </button>
+
+    <button mat-raised-button [class.active]="selectedTab === 'export'" (click)="selectTab('export')">
+      <mat-icon>sync_alt</mat-icon> Model
+    </button>
+
+    <mat-form-field appearance="outline" class="dropdown">
+      <mat-label>Select Recon Service</mat-label>
+      <mat-select [(ngModel)]="selectedService">
+        <mat-option *ngFor="let s of services" [value]="s">{{ s }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div *ngIf="selectedTab === 'import'" class="import-section">
+    <mat-checkbox [(ngModel)]="overwrite">Overwrite</mat-checkbox>
+
+    <div class="file-upload">
+      <button mat-raised-button color="primary" (click)="fileInput.click()">
+        <mat-icon>attach_file</mat-icon> Select File
+      </button>
+      <input type="file" hidden #fileInput (change)="onFileSelected($event)" />
+      <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
+    </div>
+
+    <button mat-raised-button color="accent" (click)="upload()">Upload</button>
+  </div>
+
+  <div *ngIf="selectedTab === 'export'" class="export-section">
+    <ag-grid-angular
+      class="ag-theme-alpine"
+      style="width: 100%; height: 300px;"
+      [rowData]="rowData"
+      [columnDefs]="columnDefs"
+      rowSelection="multiple"
+      (selectionChanged)="onSelectionChanged($event)"
+      (gridReady)="onGridReady($event)">
+    </ag-grid-angular>
+
+    <button mat-raised-button color="primary" (click)="exportModels()">Export</button>
+    <div *ngIf="showWarning" class="warning">Please select one or more items to export.</div>
+  </div>
+
+  <div *ngIf="showModal" class="modal">
+    <div class="modal-content">
+      <h3>JSON Preview</h3>
+      <pre>{{ previewJson }}</pre>
+      <button mat-button (click)="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+
+.manager-container {
+  padding: 20px;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.dropdown {
+  min-width: 200px;
+}
+
+.import-section, .export-section {
+  margin-top: 20px;
+}
+
+.file-upload {
+  margin-top: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.warning {
+  color: red;
+  margin-top: 10px;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  width: 500px;
+  border-radius: 8px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="manager-container">
+  <h2>Import-Export Manager</h2>
+
+  <div class="top-bar">
     <div class="action-box" [class.active]="selectedTab === 'import'" (click)="selectTab('import')">
       <mat-icon>cloud_upload</mat-icon>
       <span>New Import</span>
