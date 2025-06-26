@@ -1,3 +1,84 @@
+@Entity
+@Table(name = "import_metadata")
+public class ImportMetadata {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String filename;
+    private String service;
+
+    @Column(name = "overwrite_flag")
+    private char overwriteFlag;
+
+    @Column(name = "uploaded_at", insertable = false, updatable = false)
+    private Timestamp uploadedAt;
+
+    // Getters and Setters
+}
+
+public interface ImportMetadataRepository extends JpaRepository<ImportMetadata, Long> {
+}
+
+@RestController
+@RequestMapping("/api/import")
+@CrossOrigin
+public class FileImportController {
+
+    @Autowired
+    private ImportMetadataRepository repository;
+
+    private final String uploadDir = "/opt/uploads/";
+
+    @PostMapping("/upload")
+    public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file,
+                                         @RequestParam("service") String service,
+                                         @RequestParam("overwrite") boolean overwrite) {
+        try {
+            Path targetPath = Paths.get(uploadDir + file.getOriginalFilename());
+            Files.write(targetPath, file.getBytes(), StandardOpenOption.CREATE);
+
+            ImportMetadata metadata = new ImportMetadata();
+            metadata.setFilename(file.getOriginalFilename());
+            metadata.setService(service);
+            metadata.setOverwriteFlag(overwrite ? 'Y' : 'N');
+            repository.save(metadata);
+
+            return ResponseEntity.ok("File uploaded and metadata saved.");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Upload failed.");
+        }
+    }
+
+    @GetMapping("/export-models")
+    public ResponseEntity<List<ImportMetadata>> getExportModels() {
+        return ResponseEntity.ok(repository.findAll());
+    }
+
+    @GetMapping("/json/{filename}")
+public ResponseEntity<String> getUploadedJson(@PathVariable String filename) {
+    try {
+        Path path = Paths.get(uploadDir + filename);
+        if (!Files.exists(path)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found.");
+        }
+        String content = Files.readString(path);
+        return ResponseEntity.ok(content);
+    } catch (IOException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to read file.");
+    }
+}
+}
+
+
+
+
+
+
+
+
+
+
 ts
 import { Component, OnInit } from '@angular/core';
 import { ColDef } from 'ag-grid-community';
