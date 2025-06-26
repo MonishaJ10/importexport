@@ -1,3 +1,38 @@
+@PostMapping("/upload")
+public ResponseEntity<String> uploadFile(
+        @RequestParam("file") MultipartFile file,
+        @RequestParam("service") String service,
+        @RequestParam("overwrite") String overwriteFlag) {
+
+    try {
+        File dir = new File(uploadDir);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        String filePath = uploadDir + file.getOriginalFilename();
+        file.transferTo(new File(filePath));
+
+        System.out.println("File saved to: " + filePath);
+
+        // Proceed to save metadata, parse JSON etc.
+        return ResponseEntity.ok("Uploaded successfully");
+
+    } catch (IOException e) {
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Upload failed: " + e.getMessage());
+    }
+}
+
+
+
+
+
+
+
+
+
 <div *ngIf="services.length === 0">No services loaded</div>
 <div *ngIf="services.length > 0">
   Services loaded: {{ services | json }}
