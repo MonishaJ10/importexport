@@ -120,16 +120,19 @@ public class FileImportController {
 
 
 ts
-
 import { Component, OnInit } from '@angular/core';
 import { ColDef } from 'ag-grid-community';
 import { HttpClient } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AgGridModule } from 'ag-grid-angular';
 
 @Component({
   selector: 'app-import-export-manager',
   templateUrl: './import-export-manager.component.html',
   styleUrls: ['./import-export-manager.component.css'],
   standalone: true,
+  imports: [CommonModule, FormsModule, AgGridModule]
 })
 export class ImportExportManagerComponent implements OnInit {
   showImport = false;
@@ -137,12 +140,11 @@ export class ImportExportManagerComponent implements OnInit {
   overwrite = true;
   selectedFile: File | null = null;
   showWarning = false;
-
-  rowData: any[] = [];
   previewJson: string | null = null;
   showModal = false;
   selectedRows: any[] = [];
 
+  rowData: any[] = [];
   columnDefs: ColDef[] = [
     { headerName: '', checkboxSelection: true, width: 50 },
     { field: 'filename', headerName: 'Model' },
@@ -168,8 +170,9 @@ export class ImportExportManagerComponent implements OnInit {
     this.selectedFile = null;
   }
 
-  onServiceChange(service: string) {
-    this.selectedService = service;
+  onServiceChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    this.selectedService = target.value;
   }
 
   onFileSelected(event: any) {
@@ -190,8 +193,7 @@ export class ImportExportManagerComponent implements OnInit {
         this.showImport = false;
         alert('Upload successful!');
       },
-      error: (err) => {
-        console.error('Upload failed', err);
+      error: () => {
         alert('Upload failed. Please check the file format or backend logs.');
       }
     });
@@ -213,6 +215,7 @@ export class ImportExportManagerComponent implements OnInit {
     } else {
       this.showWarning = false;
       console.log('Exporting:', this.selectedRows);
+      // Add download/export logic here if needed
     }
   }
 
@@ -257,7 +260,7 @@ html
 
 <div *ngIf="showImport" class="import-form">
   <label>Service:
-    <select (change)="onServiceChange($event.target.value)">
+    <select (change)="onServiceChange($event)">
       <option value="">Select</option>
       <option value="Reconciliation">Reconciliation</option>
     </select>
@@ -293,6 +296,7 @@ html
     <button (click)="closeModal()">Close</button>
   </div>
 </div>
+
 
 
 
