@@ -1,3 +1,283 @@
+html
+<div class="import-export-container">
+  <h2>Import-Export Manager</h2>
+
+  <div class="tab-buttons">
+    <button [class.active]="activeTab === 'import'" (click)="activeTab = 'import'">Import</button>
+    <button [class.active]="activeTab === 'export'" (click)="activeTab = 'export'">Export</button>
+  </div>
+
+  <div *ngIf="activeTab === 'import'" class="import-section">
+    <button (click)="showImportForm = !showImportForm">New Import</button>
+
+    <div *ngIf="showImportForm" class="form-section">
+      <label>Choose</label>
+      <select class="dropdown" (change)="onServiceChange($event)">
+        <option value="">Select Recon Service</option>
+        <option *ngFor="let svc of services" [value]="svc">{{ svc }}</option>
+      </select>
+
+      <mat-checkbox [(ngModel)]="overwrite">Overwrite</mat-checkbox>
+
+      <input type="file" (change)="onFileSelected($event)" />
+      <button (click)="upload()">Upload</button>
+    </div>
+  </div>
+
+  <div *ngIf="activeTab === 'export'" class="export-section">
+    <button (click)="fetchExportModels()">Model</button>
+
+    <ag-grid-angular
+      class="ag-theme-alpine"
+      style="width: 100%; height: 300px; margin-top: 20px;"
+      [rowData]="rowData"
+      [columnDefs]="columnDefs"
+      rowSelection="multiple"
+      (selectionChanged)="onSelectionChanged($event)"
+      (gridReady)="onGridReady($event)">
+    </ag-grid-angular>
+
+    <button class="export-btn" (click)="exportModels()">Export</button>
+    <div *ngIf="showWarning" class="warning">Please select one or more items to export.</div>
+  </div>
+
+  <!-- JSON Preview Modal -->
+  <div *ngIf="showModal" class="modal">
+    <div class="modal-content">
+      <h3>JSON Preview</h3>
+      <pre>{{ previewJson }}</pre>
+      <button (click)="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+ts
+import { Component, OnInit } from '@angular/core';
+import { ColDef } from 'ag-grid-community';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { AgGridModule } from 'ag-grid-angular';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { ImportExportService } from './import-export.service';
+
+@Component({
+  selector: 'app-import-export-manager',
+  standalone: true,
+  templateUrl: './import-export-manager.component.html',
+  styleUrls: ['./import-export-manager.component.css'],
+  imports: [CommonModule, FormsModule, AgGridModule, MatCheckboxModule]
+})
+export class ImportExportManagerComponent implements OnInit {
+  activeTab: 'import' | 'export' = 'import';
+  showImportForm = false;
+  overwrite = false;
+  selectedService: string = '';
+  selectedFile: File | null = null;
+
+  services: string[] = [];
+  rowData: any[] = [];
+  selectedRows: any[] = [];
+
+  showWarning = false;
+  showModal = false;
+  previewJson: string | null = null;
+
+  columnDefs: ColDef[] = [
+    { headerName: '', checkboxSelection: true, width: 50 },
+    { field: 'filename', headerName: 'Model' },
+    { field: 'overwriteFlag', headerName: 'Mode' },
+    { field: 'uploadedAt', headerName: 'Uploaded At' },
+    { field: 'service', headerName: 'Service' },
+    {
+      headerName: 'Actions',
+      cellRenderer: () => `<button class="preview-btn">Preview</button>`,
+      width: 100,
+    }
+  ];
+
+  constructor(private service: ImportExportService) {}
+
+  ngOnInit(): void {
+    this.fetchExportModels();
+    this.fetchServices();
+  }
+
+  fetchServices() {
+    this.service.getServices().subscribe({
+      next: (data) => (this.services = data),
+      error: () => alert('Failed to load service list.')
+    });
+  }
+
+  onServiceChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    this.selectedService = target.value;
+  }
+
+  onFileSelected(event: any) {
+    this.selectedFile = event.target.files[0];
+  }
+
+  upload() {
+    if (!this.selectedFile || !this.selectedService) {
+      alert('Please select a service and a file.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', this.selectedFile);
+    formData.append('service', this.selectedService);
+    formData.append('overwrite', String(this.overwrite));
+
+    this.service.upload(formData).subscribe({
+      next: () => {
+        this.fetchExportModels();
+        this.showImportForm = false;
+        this.selectedFile = null;
+        alert('Upload successful!');
+      },
+      error: () => alert('Upload failed.')
+    });
+  }
+
+  fetchExportModels() {
+    this.service.getExportModels().subscribe(data => {
+      this.rowData = data;
+    });
+  }
+
+  onSelectionChanged(event: any) {
+    this.selectedRows = event.api.getSelectedRows();
+  }
+
+  exportModels() {
+    if (this.selectedRows.length === 0) {
+      this.showWarning = true;
+    } else {
+      this.showWarning = false;
+      console.log('Exporting:', this.selectedRows);
+    }
+  }
+
+  onGridReady(params: any) {
+    params.api.addEventListener('cellClicked', (event: any) => {
+      if (event.colDef.headerName === 'Actions' &&
+          event.event.target.classList.contains('preview-btn')) {
+        this.loadJsonPreview(event.data.filename);
+      }
+    });
+  }
+
+  loadJsonPreview(filename: string) {
+    this.service.getJsonPreview(filename).subscribe({
+      next: (json) => {
+        this.previewJson = json;
+        this.showModal = true;
+      },
+      error: () => alert('Failed to load JSON preview.')
+    });
+  }
+
+  closeModal() {
+    this.showModal = false;
+    this.previewJson = null;
+  }
+}
+
+
+service.ts
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+@Injectable({ providedIn: 'root' })
+export class ImportExportService {
+  constructor(private http: HttpClient) {}
+
+  getServices(): Observable<string[]> {
+    return this.http.get<string[]>('/api/import/services');
+  }
+
+  upload(formData: FormData): Observable<any> {
+    return this.http.post('/api/import/upload', formData);
+  }
+
+  getExportModels(): Observable<any[]> {
+    return this.http.get<any[]>('/api/import/export-models');
+  }
+
+  getJsonPreview(filename: string): Observable<string> {
+    return this.http.get(`/api/import/json/${filename}`, { responseType: 'text' });
+  }
+}
+
+css
+.import-export-container {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+.tab-buttons button {
+  margin-right: 10px;
+  padding: 8px 16px;
+  border: 1px solid #1976d2;
+  background: white;
+  color: #1976d2;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.tab-buttons .active {
+  background-color: #1976d2;
+  color: white;
+  font-weight: bold;
+}
+
+.form-section {
+  margin-top: 15px;
+  border: 1px solid #ccc;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.dropdown {
+  width: 250px;
+  padding: 5px;
+  margin: 8px 0;
+}
+
+.warning {
+  color: red;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  max-width: 600px;
+  width: 90%;
+  border-radius: 8px;
+}
+
+
+
+
+
+
 ImportMetadata.java
 package com.example.importexport.model;
 
