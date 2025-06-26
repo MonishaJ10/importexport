@@ -1,6 +1,16 @@
+ImportMetadata.java
+package com.example.importexport.model;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.sql.Timestamp;
+
+@Data
 @Entity
 @Table(name = "import_metadata")
 public class ImportMetadata {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -13,12 +23,35 @@ public class ImportMetadata {
 
     @Column(name = "uploaded_at", insertable = false, updatable = false)
     private Timestamp uploadedAt;
-
-    // Getters and Setters
 }
+
+
+
+   
+ImportMetadataRepository
+package com.example.importexport.repository;
+
+import com.example.importexport.model.ImportMetadata;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ImportMetadataRepository extends JpaRepository<ImportMetadata, Long> {
 }
+
+
+
+file import controller 
+package com.example.importexport.controller;
+
+import com.example.importexport.model.ImportMetadata;
+import com.example.importexport.repository.ImportMetadataRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/import")
@@ -56,19 +89,26 @@ public class FileImportController {
     }
 
     @GetMapping("/json/{filename}")
-public ResponseEntity<String> getUploadedJson(@PathVariable String filename) {
-    try {
-        Path path = Paths.get(uploadDir + filename);
-        if (!Files.exists(path)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found.");
+    public ResponseEntity<String> getUploadedJson(@PathVariable String filename) {
+        try {
+            Path path = Paths.get(uploadDir + filename);
+            if (!Files.exists(path)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found.");
+            }
+            String content = Files.readString(path);
+            return ResponseEntity.ok(content);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to read file.");
         }
-        String content = Files.readString(path);
-        return ResponseEntity.ok(content);
-    } catch (IOException e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to read file.");
     }
 }
-}
+
+
+
+
+
+
+
 
 
 
@@ -80,6 +120,7 @@ public ResponseEntity<String> getUploadedJson(@PathVariable String filename) {
 
 
 ts
+
 import { Component, OnInit } from '@angular/core';
 import { ColDef } from 'ag-grid-community';
 import { HttpClient } from '@angular/common/http';
@@ -96,27 +137,24 @@ export class ImportExportManagerComponent implements OnInit {
   overwrite = true;
   selectedFile: File | null = null;
   showWarning = false;
-  selectedRows: any[] = [];
 
   rowData: any[] = [];
+  previewJson: string | null = null;
+  showModal = false;
+  selectedRows: any[] = [];
+
   columnDefs: ColDef[] = [
     { headerName: '', checkboxSelection: true, width: 50 },
     { field: 'filename', headerName: 'Model' },
     { field: 'overwriteFlag', headerName: 'Mode' },
-    { field: 'uploadedAt', headerName: 'Frequency' },
+    { field: 'uploadedAt', headerName: 'Uploaded At' },
     { field: 'service', headerName: 'Service' },
-    { field: 'status', headerName: 'Import Status' },
     {
       headerName: 'Actions',
-      cellRenderer: (params: any) => {
-        return `<button class="preview-btn">Preview</button>`;
-      },
+      cellRenderer: () => `<button class="preview-btn">Preview</button>`,
       width: 100,
     }
   ];
-
-  previewJson: string | null = null;
-  showModal = false;
 
   constructor(private http: HttpClient) {}
 
@@ -175,7 +213,6 @@ export class ImportExportManagerComponent implements OnInit {
     } else {
       this.showWarning = false;
       console.log('Exporting:', this.selectedRows);
-      // Download/export logic here
     }
   }
 
@@ -188,9 +225,14 @@ export class ImportExportManagerComponent implements OnInit {
   }
 
   loadJsonPreview(filename: string) {
-    this.http.get(`/api/import/json/${filename}`, { responseType: 'text' }).subscribe(json => {
-      this.previewJson = json;
-      this.showModal = true;
+    this.http.get(`/api/import/json/${filename}`, { responseType: 'text' }).subscribe({
+      next: (json) => {
+        this.previewJson = json;
+        this.showModal = true;
+      },
+      error: () => {
+        alert('Failed to load JSON preview.');
+      }
     });
   }
 
@@ -199,6 +241,8 @@ export class ImportExportManagerComponent implements OnInit {
     this.previewJson = null;
   }
 }
+
+
 
 html
 <div class="header">
@@ -250,12 +294,15 @@ html
   </div>
 </div>
 
+
+
 css
 .preview-btn {
-  background: #ddd;
-  border: none;
+  background: #e0e0e0;
+  border: 1px solid #999;
   padding: 4px 8px;
   cursor: pointer;
+  border-radius: 4px;
 }
 
 .modal {
@@ -277,13 +324,8 @@ css
   max-width: 80%;
   max-height: 80%;
   overflow: auto;
-  border-radius: 4px;
+  border-radius: 6px;
 }
-
-
-
-
-
 
 
 
