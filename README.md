@@ -1,3 +1,295 @@
+<div class="manager-container">
+  <h2>Import-Export Manager</h2>
+
+  <div class="toggle-boxes">
+    <div
+      class="action-box"
+      [class.active]="selectedTab === 'import'"
+      (click)="selectTab('import')"
+    >
+      <mat-icon>cloud_upload</mat-icon>
+      <span>New Import</span>
+    </div>
+
+    <div
+      class="action-box"
+      [class.active]="selectedTab === 'export'"
+      (click)="selectTab('export')"
+    >
+      <mat-icon>sync_alt</mat-icon>
+      <span>Model</span>
+    </div>
+  </div>
+
+  <!-- Import UI -->
+  <div *ngIf="selectedTab === 'import'" class="import-section">
+    <mat-form-field appearance="fill" class="dropdown">
+      <mat-label>Select Recon Service</mat-label>
+      <mat-select [(ngModel)]="selectedService">
+        <mat-option *ngFor="let s of services" [value]="s">{{ s }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-checkbox [(ngModel)]="overwrite">Overwrite</mat-checkbox>
+
+    <div class="file-upload">
+      <button mat-raised-button color="primary" (click)="fileInput.click()">
+        <mat-icon>attach_file</mat-icon> Select File
+      </button>
+      <input type="file" hidden #fileInput (change)="onFileSelected($event)" />
+      <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
+    </div>
+
+    <button mat-raised-button color="accent" (click)="upload()">Upload</button>
+  </div>
+
+  <!-- Export UI -->
+  <div *ngIf="selectedTab === 'export'" class="export-section">
+    <ag-grid-angular
+      class="ag-theme-alpine"
+      style="width: 100%; height: 300px;"
+      [rowData]="rowData"
+      [columnDefs]="columnDefs"
+      rowSelection="multiple"
+      (selectionChanged)="onSelectionChanged($event)"
+      (gridReady)="onGridReady($event)">
+    </ag-grid-angular>
+
+    <button mat-raised-button color="primary" (click)="exportModels()">Export</button>
+    <div *ngIf="showWarning" class="warning">Please select one or more items to export.</div>
+  </div>
+
+  <!-- JSON Preview Modal -->
+  <div *ngIf="showModal" class="modal">
+    <div class="modal-content">
+      <h3>JSON Preview</h3>
+      <pre>{{ previewJson }}</pre>
+      <button mat-button (click)="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+
+
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { ColDef } from 'ag-grid-community';
+import { HttpClient } from '@angular/common/http';
+import { ImportExportService } from './import-export.service';
+
+@Component({
+  selector: 'app-import-export-manager',
+  templateUrl: './import-export-manager.component.html',
+  styleUrls: ['./import-export-manager.component.css']
+})
+export class ImportExportManagerComponent implements OnInit {
+  selectedTab: 'import' | 'export' = 'import';
+  services: string[] = [];
+  selectedService = '';
+  overwrite = false;
+  selectedFile: File | null = null;
+
+  rowData: any[] = [];
+  selectedRows: any[] = [];
+  showWarning = false;
+
+  showModal = false;
+  previewJson: string | null = null;
+
+  columnDefs: ColDef[] = [
+    { headerName: '', checkboxSelection: true, width: 50 },
+    { field: 'filename', headerName: 'Model' },
+    { field: 'overwriteFlag', headerName: 'Mode' },
+    { field: 'uploadedAt', headerName: 'Uploaded At' },
+    { field: 'service', headerName: 'Service' },
+    {
+      headerName: 'Actions',
+      cellRenderer: () => `<button class="preview-btn">Preview</button>`,
+      width: 100,
+    }
+  ];
+
+  constructor(private service: ImportExportService) {}
+
+  ngOnInit(): void {
+    this.fetchServices();
+    this.fetchExportModels();
+  }
+
+  selectTab(tab: 'import' | 'export') {
+    this.selectedTab = tab;
+    if (tab === 'export') {
+      this.fetchExportModels();
+    }
+  }
+
+  fetchServices() {
+    this.service.getServices().subscribe({
+      next: (data) => (this.services = data),
+      error: () => alert('Failed to load services.')
+    });
+  }
+
+  onFileSelected(event: any) {
+    this.selectedFile = event.target.files[0];
+  }
+
+  upload() {
+    if (!this.selectedFile || !this.selectedService) {
+      alert('Please select a service and a file.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', this.selectedFile);
+    formData.append('service', this.selectedService);
+    formData.append('overwrite', String(this.overwrite));
+
+    this.service.upload(formData).subscribe({
+      next: () => {
+        alert('Upload successful!');
+        this.fetchExportModels();
+        this.selectedFile = null;
+      },
+      error: () => alert('Upload failed.')
+    });
+  }
+
+  fetchExportModels() {
+    this.service.getExportModels().subscribe(data => {
+      this.rowData = data;
+    });
+  }
+
+  onSelectionChanged(event: any) {
+    this.selectedRows = event.api.getSelectedRows();
+  }
+
+  exportModels() {
+    if (this.selectedRows.length === 0) {
+      this.showWarning = true;
+    } else {
+      this.showWarning = false;
+      console.log('Exporting models:', this.selectedRows);
+    }
+  }
+
+  onGridReady(params: any) {
+    params.api.addEventListener('cellClicked', (event: any) => {
+      if (event.colDef.headerName === 'Actions' &&
+          event.event.target.classList.contains('preview-btn')) {
+        this.loadJsonPreview(event.data.filename);
+      }
+    });
+  }
+
+  loadJsonPreview(filename: string) {
+    this.service.getJsonPreview(filename).subscribe({
+      next: (json) => {
+        this.previewJson = json;
+        this.showModal = true;
+      },
+      error: () => alert('Failed to load JSON preview.')
+    });
+  }
+
+  closeModal() {
+    this.showModal = false;
+    this.previewJson = null;
+  }
+}
+
+
+
+.manager-container {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+.toggle-boxes {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.action-box {
+  border: 1px solid #ccc;
+  padding: 20px;
+  width: 150px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+}
+
+.action-box:hover,
+.action-box.active {
+  background-color: #0077b6;
+  color: white;
+  border-color: #0077b6;
+}
+
+.import-section,
+.export-section {
+  margin-top: 20px;
+}
+
+.dropdown {
+  width: 300px;
+  margin: 10px 0;
+}
+
+.file-upload {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.warning {
+  color: red;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  max-width: 600px;
+  width: 90%;
+  border-radius: 8px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @PostMapping("/upload")
 public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file,
                                      @RequestParam("service") String service,
