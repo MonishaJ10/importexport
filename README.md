@@ -7,6 +7,227 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { ColDef } from 'ag-grid-community';
+import { AgGridModule } from 'ag-grid-angular';
+import { ImportExportService } from './import-export.service';
+
+@Component({
+  selector: 'app-import-export-manager',
+  standalone: true,
+  templateUrl: './import-export-manager.component.html',
+  styleUrls: ['./import-export-manager.component.css'],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatCheckboxModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatIconModule,
+    AgGridModule
+  ]
+})
+export class ImportExportManagerComponent implements OnInit {
+  selectedTab: 'import' | 'export' = 'import';
+  services: string[] = [];
+  selectedService = '';
+  overwrite = false;
+  selectedFile: File | null = null;
+  rowData: any[] = [];
+  selectedRows: any[] = [];
+  showWarning = false;
+  showModal = false;
+  previewJson: string | null = null;
+  showModelTable = false;
+
+  columnDefs: ColDef[] = [
+    { headerName: '', checkboxSelection: true, width: 50 },
+    { field: 'filename', headerName: 'Model' },
+    { field: 'overwriteFlag', headerName: 'Mode' },
+    { field: 'uploadedAt', headerName: 'Uploaded At' },
+    { field: 'service', headerName: 'Service' },
+    {
+      headerName: 'Actions',
+      cellRenderer: () => '<button class="preview-btn">Preview</button>',
+      width: 100
+    }
+  ];
+
+  constructor(private service: ImportExportService) {}
+
+  ngOnInit(): void {
+    this.fetchServices();
+    this.fetchExportModels(); // Optional: preload models
+  }
+
+  selectTab(tab: 'import' | 'export') {
+    this.selectedTab = tab;
+    if (tab === 'export') {
+      this.fetchExportModels();
+    }
+  }
+
+  fetchServices() {
+    this.service.getServices().subscribe({
+      next: (data) => {
+        this.services = data;
+      },
+      error: () => alert('Failed to load services.')
+    });
+  }
+
+  onFileSelected(event: any) {
+    this.selectedFile = event.target.files[0];
+  }
+
+  upload() {
+    if (!this.selectedFile || !this.selectedService) {
+      alert('Please select a service and a file.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', this.selectedFile);
+    formData.append('service', this.selectedService);
+    formData.append('overwrite', String(this.overwrite));
+
+    this.service.upload(formData).subscribe({
+      next: () => {
+        alert('Upload successful!');
+        this.fetchExportModels();
+        this.selectedFile = null;
+        this.showModelTable = true;
+      },
+      error: () => alert('Upload failed.')
+    });
+  }
+
+  fetchExportModels() {
+    this.service.getExportModels().subscribe((data) => {
+      this.rowData = data;
+    });
+  }
+
+  onGridReady(params: any) {
+    params.api.addEventListener('cellClicked', (event: any) => {
+      if (
+        event.colDef.headerName === 'Actions' &&
+        event.event.target.classList.contains('preview-btn')
+      ) {
+        this.loadJsonPreview(event.data.filename);
+      }
+    });
+  }
+
+  loadJsonPreview(filename: string) {
+    this.service.getJsonPreview(filename).subscribe({
+      next: (json) => {
+        this.previewJson = json;
+        this.showModal = true;
+      },
+      error: () => alert('Failed to load JSON preview.')
+    });
+  }
+
+  closeModal() {
+    this.showModal = false;
+    this.previewJson = null;
+  }
+}
+
+
+
+<div class="manager-container">
+  <h2>Import-Export Manager</h2>
+
+  <div class="top-bar">
+    <button mat-raised-button color="primary" [class.active]="selectedTab === 'import'" (click)="selectTab('import')">
+      <mat-icon>cloud_upload</mat-icon> New Import
+    </button>
+
+    <button mat-raised-button [class.active]="selectedTab === 'export'" (click)="selectTab('export')">
+      <mat-icon>sync_alt</mat-icon> Model
+    </button>
+
+    <mat-form-field appearance="outline" class="dropdown">
+      <mat-label>Select Recon Service</mat-label>
+      <mat-select [(ngModel)]="selectedService">
+        <mat-option *ngFor="let s of services" [value]="s">{{ s }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div *ngIf="selectedTab === 'import'" class="import-section">
+    <mat-checkbox [(ngModel)]="overwrite">Overwrite</mat-checkbox>
+
+    <div class="file-upload">
+      <button mat-raised-button color="primary" (click)="fileInput.click()">
+        <mat-icon>attach_file</mat-icon> Select File
+      </button>
+      <input type="file" hidden #fileInput (change)="onFileSelected($event)" />
+      <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
+    </div>
+
+    <button mat-raised-button color="accent" [disabled]="!selectedFile || !selectedService" (click)="upload()">
+      Upload
+    </button>
+
+    <!-- ✅ Show AG Grid table below after upload -->
+    <div *ngIf="showModelTable" class="import-models-table">
+      <ag-grid-angular
+        class="ag-theme-alpine"
+        style="width: 100%; height: 300px;"
+        [rowData]="rowData"
+        [columnDefs]="columnDefs"
+        rowSelection="multiple"
+        (gridReady)="onGridReady($event)">
+      </ag-grid-angular>
+    </div>
+  </div>
+
+  <div *ngIf="selectedTab === 'export'" class="export-section">
+    <!-- your Export section grid remains untouched -->
+  </div>
+
+  <div *ngIf="showModal" class="modal">
+    <div class="modal-content">
+      <h3>JSON Preview</h3>
+      <pre>{{ previewJson }}</pre>
+      <button mat-button (click)="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { AgGridModule } from 'ag-grid-angular';
 import { ColDef } from 'ag-grid-community';
 import { ImportExportService } from './import-export.service';
