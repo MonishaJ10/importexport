@@ -1,3 +1,44 @@
+upload() {
+  if (!this.selectedFile || !this.selectedService) {
+    alert('Please select a service and a file.');
+    return;
+  }
+
+  // ✅ Optional but helps prevent ERR_UPLOAD_FILE_CHANGED
+  const fileToUpload = this.selectedFile;
+
+  const formData = new FormData();
+  formData.append('file', fileToUpload);
+  formData.append('service', this.selectedService);
+  formData.append('overwrite', String(this.overwrite));
+
+  this.service.upload(formData).subscribe({
+    next: (res: any) => {
+      alert(res); // or show success message
+      this.fetchExportModels(); // Refresh the export list
+      this.selectedFile = null;
+    },
+    error: (err) => {
+      console.error('Upload error:', err); // 💡 Log error
+      alert('Upload failed: ' + (err?.error || 'Unexpected error'));
+    }
+  });
+}
+
+
+<button mat-raised-button color="accent" [disabled]="!selectedFile || !selectedService" (click)="upload()">Upload</button>
+
+
+
+
+
+
+
+
+
+
+
+
 @PostMapping("/upload")
 public ResponseEntity<String> uploadFile(
         @RequestParam("file") MultipartFile file,
