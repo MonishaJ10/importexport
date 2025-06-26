@@ -1,3 +1,12 @@
+@GetMapping("/services")
+public ResponseEntity<List<String>> getAvailableServices() {
+    List<String> services = List.of("Reconciliation", "CashManagement", "Securities"); // You can adjust these
+    return ResponseEntity.ok(services);
+}
+
+
+
+
 html
 <div class="import-export-container">
   <h2>Import-Export Manager</h2>
