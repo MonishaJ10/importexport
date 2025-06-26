@@ -1,3 +1,47 @@
+@PostMapping("/upload")
+public ResponseEntity<?> upload(
+        @RequestParam("file") MultipartFile file,
+        @RequestParam("service") String service,
+        @RequestParam("overwrite") boolean overwrite) {
+    try {
+        // Use Downloads folder (or change path if needed)
+        String uploadDir = System.getProperty("user.home") + "/Downloads/";
+        Path targetPath = Paths.get(uploadDir + file.getOriginalFilename());
+
+        // Ensure the folder exists
+        Files.createDirectories(targetPath.getParent());
+
+        // Save the file
+        Files.write(targetPath, file.getBytes(), StandardOpenOption.CREATE);
+
+        // Save metadata
+        ImportMetadata metadata = new ImportMetadata();
+        metadata.setFilename(file.getOriginalFilename());
+        metadata.setService(service);
+        metadata.setOverwriteFlag(overwrite ? 'Y' : 'N');
+        repository.save(metadata);
+
+        // ✅ Return JSON response
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "File uploaded and metadata saved.");
+        return ResponseEntity.ok(response);
+
+    } catch (IOException e) {
+        e.printStackTrace();
+
+        // ❌ Return error as JSON
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Upload failed: " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+}
+
+
+
+
+
+
+
 upload() {
   if (!this.selectedFile || !this.selectedService) {
     alert('Please select a service and a file.');
