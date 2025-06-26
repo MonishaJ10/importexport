@@ -1,3 +1,147 @@
+<div class="manager-container">
+  <h2>Import-Export Manager</h2>
+
+  <div class="top-bar">
+    <div class="action-box" [class.active]="selectedTab === 'import'" (click)="selectTab('import')">
+      <mat-icon>cloud_upload</mat-icon>
+      <span>New Import</span>
+    </div>
+
+    <div class="action-box" [class.active]="selectedTab === 'export'" (click)="selectTab('export')">
+      <mat-icon>sync_alt</mat-icon>
+      <span>Model</span>
+    </div>
+
+    <mat-form-field appearance="outline" class="dropdown">
+      <mat-label>Select Recon Service</mat-label>
+      <mat-select [(ngModel)]="selectedService">
+        <mat-option *ngFor="let s of services" [value]="s">{{ s }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div *ngIf="selectedTab === 'import'" class="import-section">
+    <mat-checkbox class="overwrite" [(ngModel)]="overwrite">Overwrite</mat-checkbox>
+
+    <div class="file-upload">
+      <button mat-raised-button color="primary" (click)="fileInput.click()">
+        <mat-icon>attach_file</mat-icon> Select File
+      </button>
+      <input type="file" hidden #fileInput (change)="onFileSelected($event)" />
+      <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
+    </div>
+
+    <button mat-raised-button color="accent" (click)="upload()">Upload</button>
+  </div>
+
+  <div *ngIf="selectedTab === 'export'" class="export-section">
+    <ag-grid-angular
+      class="ag-theme-alpine"
+      style="width: 100%; height: 300px;"
+      [rowData]="rowData"
+      [columnDefs]="columnDefs"
+      rowSelection="multiple"
+      (selectionChanged)="onSelectionChanged($event)"
+      (gridReady)="onGridReady($event)">
+    </ag-grid-angular>
+
+    <button mat-raised-button color="primary" (click)="exportModels()">Export</button>
+    <div *ngIf="showWarning" class="warning">Please select one or more items to export.</div>
+  </div>
+
+  <div *ngIf="showModal" class="modal">
+    <div class="modal-content">
+      <h3>JSON Preview</h3>
+      <pre>{{ previewJson }}</pre>
+      <button mat-button (click)="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+
+.manager-container {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.action-box {
+  border: 1px solid #ccc;
+  padding: 12px 20px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 5px;
+  background-color: white;
+  color: #007bff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-box.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.dropdown {
+  width: 250px;
+}
+
+.overwrite {
+  margin-bottom: 15px;
+}
+
+.file-upload {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.warning {
+  color: red;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  max-width: 600px;
+  width: 90%;
+  border-radius: 8px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -108,6 +252,17 @@ export class ImportExportManagerComponent implements OnInit {
     </div>
   </div>
 </div>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
