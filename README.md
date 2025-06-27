@@ -84,6 +84,15 @@ CREATE TABLE recon_models (
     mode VARCHAR2(50)
 );
 
+INSERT INTO recon_models (name, description, service, context, frequency, mode) VALUES
+('Germany_Holdings', 'Model for Germany Holdings', 'IMCIBWM_Recon', 'Securities', 'On Demand', 'Continuous');
+
+INSERT INTO recon_models (name, description, service, context, frequency, mode) VALUES
+('Germany_Nostro', 'Model for Germany Nostro', 'IMCIBWM_Recon', 'Cash', 'On Demand', 'Continuous');
+
+INSERT INTO recon_models (name, description, service, context, frequency, mode) VALUES
+('Switzerland_Settlement', 'Swiss settlement model', 'IMCIBWM_Recon', 'Fwd Rate Agr', 'On Demand', 'Continuous');
+
 
 
 
