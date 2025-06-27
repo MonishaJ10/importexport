@@ -1,3 +1,110 @@
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ExportModelDTO {
+    private String name;
+    private String description;
+    private String service;
+    private String context;
+    private String frequency;
+    private String mode;
+}
+
+model export controller 
+@RestController
+@RequestMapping("/api/export")
+public class ModelExportController {
+
+    @Autowired
+    private ModelExportService exportService;
+
+    @PostMapping("/download")
+    public ResponseEntity<?> downloadModels(@RequestBody List<String> modelNames) throws IOException {
+        List<ExportModelDTO> models = exportService.getModelsByNames(modelNames);
+
+        ByteArrayOutputStream zipOutStream = new ByteArrayOutputStream();
+        ZipOutputStream zos = new ZipOutputStream(zipOutStream);
+
+        for (ExportModelDTO model : models) {
+            String json = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(model);
+            ZipEntry entry = new ZipEntry(model.getName() + ".json");
+            zos.putNextEntry(entry);
+            zos.write(json.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+        }
+
+        zos.close();
+
+        byte[] zipBytes = zipOutStream.toByteArray();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=models.zip");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(zipBytes);
+    }
+}
+
+model export service
+@Service
+public class ModelExportService {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    public List<ExportModelDTO> getModelsByNames(List<String> modelNames) {
+        String inSql = String.join(",", Collections.nCopies(modelNames.size(), "?"));
+        String sql = "SELECT name, description, service, context, frequency, mode FROM recon_models WHERE name IN (" + inSql + ")";
+
+        return jdbcTemplate.query(sql, modelNames.toArray(), (rs, rowNum) -> {
+            ExportModelDTO dto = new ExportModelDTO();
+            dto.setName(rs.getString("name"));
+            dto.setDescription(rs.getString("description"));
+            dto.setService(rs.getString("service"));
+            dto.setContext(rs.getString("context"));
+            dto.setFrequency(rs.getString("frequency"));
+            dto.setMode(rs.getString("mode"));
+            return dto;
+        });
+    }
+}
+
+CREATE TABLE recon_models (
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name VARCHAR2(100),
+    description VARCHAR2(500),
+    service VARCHAR2(100),
+    context VARCHAR2(100),
+    frequency VARCHAR2(100),
+    mode VARCHAR2(50)
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
