@@ -1,3 +1,63 @@
+package your.package.name;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import java.util.Collections;
+import java.util.List;
+import com.your.package.ExportModelDTO;
+
+@Service
+public class ModelExportService {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    public List<ExportModelDTO> getModelsByNames(List<String> modelNames) {
+        String inSql = String.join(",", Collections.nCopies(modelNames.size(), "?"));
+        String sql = "SELECT name, description, service, context, frequency, model_mode AS mode FROM recon_models WHERE name IN (" + inSql + ")";
+
+        return jdbcTemplate.query(sql, modelNames.toArray(), (rs, rowNum) -> {
+            ExportModelDTO dto = new ExportModelDTO();
+            dto.setName(rs.getString("name"));
+            dto.setDescription(rs.getString("description"));
+            dto.setService(rs.getString("service"));
+            dto.setContext(rs.getString("context"));
+            dto.setFrequency(rs.getString("frequency"));
+            dto.setMode(rs.getString("mode"));  // AS mode is mapped here
+            return dto;
+        });
+    }
+
+    public List<ExportModelDTO> getAllModels(String sql) {
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+            ExportModelDTO dto = new ExportModelDTO();
+            dto.setName(rs.getString("name"));
+            dto.setDescription(rs.getString("description"));
+            dto.setService(rs.getString("service"));
+            dto.setContext(rs.getString("context"));
+            dto.setFrequency(rs.getString("frequency"));
+            dto.setMode(rs.getString("mode"));  // again, using alias 'mode'
+            return dto;
+        });
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <div *ngIf="selectedTab === 'export'" class="export-section">
   <div style="margin-bottom: 10px;">
     <strong>Export Models ({{ selectedRows.length }} selected)</strong>
