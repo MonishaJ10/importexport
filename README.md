@@ -1,3 +1,49 @@
+@RestController
+@RequestMapping("/api/export")
+public class ModelExportController {
+
+    @Autowired
+    private ModelExportService exportService;
+
+    @GetMapping("/export-models")
+    public List<ExportModelDTO> getAllExportModels() {
+        String sql = "SELECT name, description, service, context, frequency, model_mode AS mode FROM recon_models";
+        return exportService.getAllModels(sql);  // This must now compile!
+    }
+
+    @PostMapping("/download")
+    public ResponseEntity<?> downloadModels(@RequestBody List<String> modelNames) throws IOException {
+        List<ExportModelDTO> models = exportService.getModelsByNames(modelNames);
+        ByteArrayOutputStream zipOutStream = new ByteArrayOutputStream();
+        ZipOutputStream zos = new ZipOutputStream(zipOutStream);
+
+        for (ExportModelDTO model : models) {
+            String json = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(model);
+            ZipEntry entry = new ZipEntry(model.getName() + ".json");
+            zos.putNextEntry(entry);
+            zos.write(json.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+        }
+
+        zos.close();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=models.zip");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(zipOutStream.toByteArray());
+    }
+}
+
+
+
+
+
+
+
+
 @Service
 public class ModelExportService {
 
