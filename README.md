@@ -1,3 +1,49 @@
+@PostMapping("/download")
+public ResponseEntity<Resource> downloadModels(@RequestBody List<String> modelNames) throws IOException {
+    List<ExportModelDTO> models = exportService.getModelsByNames(modelNames);
+
+    if (models.isEmpty()) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+    }
+
+    ByteArrayOutputStream zipOutStream = new ByteArrayOutputStream();
+    ZipOutputStream zos = new ZipOutputStream(zipOutStream);
+
+    for (ExportModelDTO model : models) {
+        String safeName = model.getName().replaceAll("[^a-zA-Z0-9_-]", "_"); // prevent invalid filenames
+        String json = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(model);
+
+        ZipEntry entry = new ZipEntry(safeName + ".json");
+        zos.putNextEntry(entry);
+        zos.write(json.getBytes(StandardCharsets.UTF_8));
+        zos.closeEntry();
+    }
+
+    zos.finish(); // finalize properly
+    zos.close();
+
+    ByteArrayResource resource = new ByteArrayResource(zipOutStream.toByteArray());
+
+    return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=models.zip")
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .body(resource);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @PostMapping("/api/export/download")
 public ResponseEntity<Resource> downloadModels(@RequestBody List<String> modelNames) throws IOException {
     ByteArrayOutputStream zipOut = new ByteArrayOutputStream();
