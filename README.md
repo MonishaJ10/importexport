@@ -199,7 +199,12 @@ getExportModels() {
 
 
 
+@GetMapping("/export-models")
+public List<ExportModelDTO> getAllExportModels() {
+    String sql = "SELECT name, description, service, context, frequency, model_mode AS mode FROM recon_models";
 
+    return exportService.getAllModels(sql);
+}
 
 
 
