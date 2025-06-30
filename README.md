@@ -1,4 +1,376 @@
 <div class="manager-container">
+  <h2>Import-Export Manager</h2>  <div class="top-bar">
+    <button mat-raised-button color="primary" [class.active]="selectedTab === 'import'" (click)="selectTab('import')">
+      <mat-icon>cloud_upload</mat-icon> New Import
+    </button><button mat-raised-button color="warn" [class.active]="selectedTab === 'export'" (click)="selectTab('export')">
+  <mat-icon>sync_alt</mat-icon> Model
+</button>
+
+<mat-form-field appearance="outline" class="dropdown">
+  <mat-label>Select Recon Service</mat-label>
+  <mat-select [(ngModel)]="selectedService">
+    <mat-option *ngFor="let s of services" [value]="s">{{ s }}</mat-option>
+  </mat-select>
+</mat-form-field>
+
+  </div>  <!-- Import Section -->  <div *ngIf="selectedTab === 'import'" class="import-section">
+    <mat-checkbox [(ngModel)]="overwrite">Overwrite</mat-checkbox><div class="file-upload">
+  <button mat-raised-button color="primary" (click)="fileInput.click()">
+    <mat-icon>attach_file</mat-icon> Select File
+  </button>
+  <input type="file" #fileInput hidden (change)="onFileSelected($event)" />
+  <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
+</div>
+
+<button mat-raised-button color="accent" [disabled]="!selectedFile || !selectedService" (click)="upload()">
+  Upload
+</button>
+
+<div *ngIf="showModelTable" class="import-models-table">
+  <ag-grid-angular
+    class="ag-theme-alpine"
+    style="width: 100%; height: 300px;"
+    [rowData]="importData"
+    [columnDefs]="columnDefs"
+    rowSelection="multiple"
+    (gridReady)="onGridReady($event)">
+  </ag-grid-angular>
+</div>
+
+  </div>  <!-- Export Section -->  <div *ngIf="selectedTab === 'export'" class="export-section">
+    <div style="margin-bottom: 10px;">
+      <strong>Export Models ({{ selectedRows.length }} selected)</strong>
+    </div><ag-grid-angular
+  class="ag-theme-alpine"
+  style="width: 100%; height: 300px;"
+  [rowData]="exportData"
+  [columnDefs]="exportColumnDefs"
+  rowSelection="multiple"
+  (selectionChanged)="onSelectionChanged($event)">
+</ag-grid-angular>
+
+<button mat-raised-button color="primary" style="margin-top: 10px;" (click)="exportSelectedModels()" [disabled]="selectedRows.length === 0">
+  Export
+</button>
+
+  </div>  <!-- Preview Modal -->  <div *ngIf="showModal" class="modal">
+    <div class="modal-content">
+      <h3>JSON Preview</h3>
+      <pre>{{ previewJson }}</pre>
+      <button mat-button (click)="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+ts
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { AgGridModule } from 'ag-grid-angular';
+import { ColDef } from 'ag-grid-community';
+import { ImportExportService } from './import-export.service';
+
+@Component({
+  selector: 'app-import-export-manager',
+  standalone: true,
+  templateUrl: './import-export-manager.component.html',
+  styleUrls: ['./import-export-manager.component.css'],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatCheckboxModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatIconModule,
+    AgGridModule
+  ]
+})
+export class ImportExportManagerComponent implements OnInit {
+  selectedTab: 'import' | 'export' = 'import';
+
+  services: string[] = [];
+  selectedService = '';
+  overwrite = false;
+  selectedFile: File | null = null;
+
+  importRowData: any[] = [];
+  exportRowData: any[] = [];
+  selectedRows: any[] = [];
+
+  showModal = false;
+  previewJson: string | null = null;
+  showImportTable = false;
+
+  columnDefs: ColDef[] = [
+    { headerName: '', checkboxSelection: true, width: 50 },
+    { field: 'filename', headerName: 'Model' },
+    { field: 'overwriteFlag', headerName: 'Mode' },
+    { field: 'uploadedAt', headerName: 'Uploaded At' },
+    { field: 'service', headerName: 'Service' },
+    {
+      headerName: 'Actions',
+      cellRenderer: () => '<button class="preview-btn">Preview</button>',
+      width: 100
+    }
+  ];
+
+  exportColumnDefs: ColDef[] = [
+    { headerName: '', checkboxSelection: true, width: 50 },
+    { field: 'name', headerName: 'Model' },
+    { field: 'model_mode', headerName: 'Mode' },
+    { field: 'frequency', headerName: 'Frequency' },
+    { field: 'context', headerName: 'Context' },
+    { field: 'service', headerName: 'Service' }
+  ];
+
+  constructor(private service: ImportExportService) {}
+
+  ngOnInit(): void {
+    this.fetchServices();
+    this.fetchExportModels();
+  }
+
+  selectTab(tab: 'import' | 'export') {
+    this.selectedTab = tab;
+    if (tab === 'export') {
+      this.fetchExportModels();
+    }
+  }
+
+  fetchServices() {
+    this.service.getServices().subscribe({
+      next: (data) => this.services = data,
+      error: () => alert('Failed to load services.')
+    });
+  }
+
+  onFileSelected(event: any) {
+    this.selectedFile = event.target.files[0];
+  }
+
+  upload() {
+    if (!this.selectedFile || !this.selectedService) {
+      alert('Please select a service and a file.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', this.selectedFile);
+    formData.append('service', this.selectedService);
+    formData.append('overwrite', String(this.overwrite));
+
+    this.service.upload(formData).subscribe({
+      next: () => {
+        alert('Upload successful!');
+        this.selectedFile = null;
+        this.fetchImportModels();
+        this.showImportTable = true;
+      },
+      error: () => alert('Upload failed.')
+    });
+  }
+
+  fetchImportModels() {
+    this.service.getImportModels().subscribe({
+      next: (data) => this.importRowData = data,
+      error: () => alert('Failed to load import models.')
+    });
+  }
+
+  fetchExportModels() {
+    this.service.getExportModels().subscribe({
+      next: (data) => this.exportRowData = data,
+      error: () => alert('Failed to load export models.')
+    });
+  }
+
+  onSelectionChanged(event: any) {
+    this.selectedRows = event.api.getSelectedRows();
+  }
+
+  exportSelectedModels() {
+    const modelNames = this.selectedRows.map(row => row.name);
+    if (modelNames.length === 0) {
+      alert('No models selected for export.');
+      return;
+    }
+
+    this.service.downloadModels(modelNames).subscribe(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'models.zip';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    });
+  }
+
+  onGridReady(params: any) {
+    params.api.addEventListener('cellClicked', (event: any) => {
+      if (event.colDef.headerName === 'Actions' &&
+          event.event.target.classList.contains('preview-btn')) {
+        this.loadJsonPreview(event.data.filename);
+      }
+    });
+  }
+
+  loadJsonPreview(filename: string) {
+    this.service.getJsonPreview(filename).subscribe({
+      next: (json) => {
+        this.previewJson = json;
+        this.showModal = true;
+      },
+      error: () => alert('Failed to load JSON preview.')
+    });
+  }
+
+  closeModal() {
+    this.showModal = false;
+    this.previewJson = null;
+  }
+
+  get rowData() {
+    return this.selectedTab === 'import' ? this.importRowData : this.exportRowData;
+  }
+}
+
+
+
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+@Injectable({ providedIn: 'root' })
+export class ImportExportService {
+  private baseImportUrl = 'http://localhost:8080/api/import';
+  private baseExportUrl = 'http://localhost:8080/api/export';
+
+  constructor(private http: HttpClient) {}
+
+  getServices(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.baseImportUrl}/services`);
+  }
+
+  upload(formData: FormData): Observable<any> {
+    return this.http.post(`${this.baseImportUrl}/upload`, formData);
+  }
+
+  getImportModels(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseImportUrl}/metadata`);
+  }
+
+  getExportModels(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseExportUrl}/export-models`);
+  }
+
+  getJsonPreview(filename: string): Observable<string> {
+    return this.http.get(`${this.baseImportUrl}/json/${filename}`, { responseType: 'text' });
+  }
+
+  downloadModels(modelNames: string[]): Observable<Blob> {
+    return this.http.post(`${this.baseExportUrl}/download`, modelNames, { responseType: 'blob' });
+  }
+}
+
+
+@GetMapping("/metadata")
+public ResponseEntity<List<ImportMetadata>> getAllImportMetadata() {
+    List<ImportMetadata> list = repository.findAll(Sort.by(Sort.Direction.DESC, "uploadedAt"));
+    return ResponseEntity.ok(list);
+}
+
+model export controller 
+@PostMapping("/download")
+public ResponseEntity<Resource> downloadModels(@RequestBody List<String> modelNames) throws IOException {
+    List<ExportModelDTO> models = exportService.getModelsByNames(modelNames);
+
+    if (models.isEmpty()) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+    }
+
+    ByteArrayOutputStream zipOutStream = new ByteArrayOutputStream();
+    ZipOutputStream zos = new ZipOutputStream(zipOutStream);
+
+    for (ExportModelDTO model : models) {
+        String safeName = model.getName().replaceAll("[^a-zA-Z0-9_-]", "_");
+        String json = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(model);
+
+        ZipEntry entry = new ZipEntry(safeName + ".json");
+        zos.putNextEntry(entry);
+        zos.write(json.getBytes(StandardCharsets.UTF_8));
+        zos.closeEntry();
+    }
+
+    zos.finish();
+    zos.close();
+
+    ByteArrayResource resource = new ByteArrayResource(zipOutStream.toByteArray());
+
+    return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=models.zip")
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .body(resource);
+}
+
+
+
+
+
+
+
+package com.example.work.model;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.sql.Timestamp;
+
+@Data
+@Entity
+@Table(name = "import_metadata")
+public class ImportMetadata {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String filename;
+
+    private String service;
+
+    @Column(name = "overwrite_flag")
+    private char overwriteFlag;
+
+    @Column(name = "uploaded_at", insertable = false, updatable = false)
+    private Timestamp uploadedAt;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="manager-container">
   <h2>Import-Export Manager</h2>
 
   <!-- Top Bar -->
