@@ -1,3 +1,20 @@
+@GetMapping("/import/export-models")
+public ResponseEntity<List<ExportModelDTO>> getExportModels() {
+    return ResponseEntity.ok(exportService.getAllExportModels());
+}
+
+
+@GetMapping("/import/preview")
+public ResponseEntity<String> previewJson(@RequestParam String filename) {
+    return ResponseEntity.ok(previewService.loadJson(filename));
+}
+
+
+
+
+
+
+
 @Component({
   selector: 'app-import-export-manager',
   standalone: true,
