@@ -1,3 +1,154 @@
+import
+package com.yourcompany.importexport.controller;
+
+import com.yourcompany.importexport.model.ImportMetadata;
+import com.yourcompany.importexport.repository.ImportMetadataRepository;
+import com.yourcompany.importexport.repository.ReconServiceRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+@RestController
+@RequestMapping("/api/import")
+@CrossOrigin
+public class FileImportController {
+
+    private final String uploadDir = System.getProperty("user.home") + "/Downloads/";
+
+    @Autowired
+    private ImportMetadataRepository repository;
+
+    @Autowired
+    private ReconServiceRepository reconServiceRepository;
+
+    @PostMapping("/upload")
+    public ResponseEntity<Map<String, String>> upload(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("service") String service,
+            @RequestParam("overwrite") boolean overwrite) {
+
+        try {
+            Path targetPath = Paths.get(uploadDir + file.getOriginalFilename());
+            Files.createDirectories(targetPath.getParent());
+            Files.write(targetPath, file.getBytes(), StandardOpenOption.CREATE);
+
+            ImportMetadata metadata = new ImportMetadata();
+            metadata.setFilename(file.getOriginalFilename());
+            metadata.setService(service);
+            metadata.setOverwriteFlag(overwrite ? "Y" : "N");
+
+            repository.save(metadata);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "File uploaded and metadata saved.");
+            return ResponseEntity.ok(response);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Upload failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    @GetMapping("/json/{filename}")
+    public ResponseEntity<String> getUploadedJson(@PathVariable String filename) {
+        try {
+            Path path = Paths.get(uploadDir + filename);
+            if (!Files.exists(path)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found.");
+            }
+            String content = Files.readString(path, StandardCharsets.UTF_8);
+            return ResponseEntity.ok(content);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to read file: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/services")
+    public ResponseEntity<List<String>> getAvailableServices() {
+        List<String> services = reconServiceRepository.findAllServiceNames();
+        return ResponseEntity.ok(services);
+    }
+
+    @GetMapping("/export-models")
+    public ResponseEntity<List<ImportMetadata>> getAllUploadedModels() {
+        List<ImportMetadata> all = repository.findAll();
+        return ResponseEntity.ok(all);
+    }
+}
+
+
+export 
+
+package com.yourcompany.importexport.controller;
+
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+@RestController
+@RequestMapping("/api/export")
+@CrossOrigin
+public class ExportController {
+
+    private final String uploadDir = System.getProperty("user.home") + "/Downloads/";
+
+    @PostMapping("/download")
+    public ResponseEntity<byte[]> downloadModels(@RequestBody List<String> modelNames) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ZipOutputStream zos = new ZipOutputStream(baos)) {
+
+            for (String name : modelNames) {
+                Path path = Paths.get(uploadDir + name);
+                if (Files.exists(path)) {
+                    String content = Files.readString(path, StandardCharsets.UTF_8);
+                    ZipEntry entry = new ZipEntry(name);
+                    zos.putNextEntry(entry);
+                    zos.write(content.getBytes(StandardCharsets.UTF_8));
+                    zos.closeEntry();
+                }
+            }
+
+            zos.finish();
+            byte[] zipBytes = baos.toByteArray();
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=models.zip")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(zipBytes);
+
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(("Failed to generate ZIP: " + e.getMessage()).getBytes());
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
 @GetMapping("/import/export-models")
 public ResponseEntity<List<ExportModelDTO>> getExportModels() {
     return ResponseEntity.ok(exportService.getAllExportModels());
