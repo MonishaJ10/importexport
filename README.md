@@ -70,6 +70,107 @@
 
 
 
+.manager-container {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+mat-form-field.dropdown {
+  min-width: 200px;
+  margin: 0;
+}
+
+button.mat-raised-button {
+  border-radius: 6px;
+  text-transform: none;
+}
+
+button.mat-raised-button.active {
+  background-color: #007bff;
+  color: white;
+}
+
+button.mat-raised-button:hover {
+  background-color: #007bff !important;
+  color: white !important;
+}
+
+.import-section,
+.export-section {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.file-upload {
+  margin-top: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+span {
+  margin-left: 10px;
+  font-style: italic;
+}
+
+.import-models-table,
+.export-models-table {
+  margin-top: 20px;
+}
+
+mat-checkbox.mat-checkbox-checked .mat-checkbox-background,
+mat-checkbox.mat-accent .mat-checkbox-background {
+  background-color: #007bff !important;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  max-width: 600px;
+  width: 90%;
+  border-radius: 8px;
+}
+
+h2 {
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+
+/* Highlight headings on tab selection */
+.top-bar button.active h2,
+.top-bar button:hover h2,
+mat-label {
+  color: #007bff;
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
