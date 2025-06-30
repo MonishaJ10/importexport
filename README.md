@@ -1,3 +1,184 @@
+import { Component, OnInit } from '@angular/core';
+import { ImportExportService } from './import-export.service';
+import { ColDef } from 'ag-grid-community';
+
+@Component({
+  selector: 'app-import-export-manager',
+  standalone: true,
+  templateUrl: './import-export-manager.component.html',
+  styleUrls: ['./import-export-manager.component.css'],
+  imports: [
+    // Your Angular Material + AG Grid modules
+  ]
+})
+export class ImportExportManagerComponent implements OnInit {
+  selectedTab: 'import' | 'export' = 'import';
+  services: string[] = [];
+  selectedService = '';
+  overwrite = false;
+  selectedFile: File | null = null;
+  rowData: any[] = [];
+  selectedRows: any[] = [];
+  showModal = false;
+  previewJson: string | null = null;
+
+  columnDefs: ColDef[] = [
+    { headerName: '', checkboxSelection: true, width: 50 },
+    { field: 'filename', headerName: 'Model' },
+    { field: 'overwriteFlag', headerName: 'Mode' },
+    { field: 'uploadedAt', headerName: 'Uploaded At' },
+    { field: 'service', headerName: 'Service' },
+    {
+      headerName: 'Actions',
+      cellRenderer: () => '<button class="preview-btn">Preview</button>',
+      width: 100
+    }
+  ];
+
+  exportColumnDefs: ColDef[] = [
+    { headerName: '', checkboxSelection: true, width: 50 },
+    { field: 'name', headerName: 'Model' },
+    { field: 'model_mode', headerName: 'Mode' },
+    { field: 'frequency', headerName: 'Frequency' },
+    { field: 'context', headerName: 'Context' },
+    { field: 'service', headerName: 'Service' }
+  ];
+
+  constructor(private service: ImportExportService) {}
+
+  ngOnInit(): void {
+    this.fetchServices();
+    this.fetchExportModels();
+  }
+
+  selectTab(tab: 'import' | 'export') {
+    this.selectedTab = tab;
+    if (tab === 'export') {
+      this.fetchExportModels();
+    }
+  }
+
+  fetchServices() {
+    this.service.getServices().subscribe({
+      next: (data) => (this.services = data),
+      error: () => alert('Failed to load services.')
+    });
+  }
+
+  onFileSelected(event: any) {
+    this.selectedFile = event.target.files[0];
+  }
+
+  upload() {
+    if (!this.selectedFile || !this.selectedService) {
+      alert('Please select a service and a file.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', this.selectedFile);
+    formData.append('service', this.selectedService);
+    formData.append('overwrite', String(this.overwrite));
+
+    this.service.upload(formData).subscribe({
+      next: () => {
+        alert('Upload successful!');
+        this.fetchImportModels();
+        this.selectedFile = null;
+      },
+      error: () => alert('Upload failed.')
+    });
+  }
+
+  fetchImportModels() {
+    this.service.getExportModels().subscribe({
+      next: (data) => (this.rowData = data),
+      error: () => alert('Failed to load import data.')
+    });
+  }
+
+  fetchExportModels() {
+    this.service.getExportModels().subscribe({
+      next: (data) => (this.rowData = data),
+      error: () => alert('Failed to load export models.')
+    });
+  }
+
+  onSelectionChanged(event: any) {
+    this.selectedRows = event.api.getSelectedRows();
+  }
+
+  exportSelectedModels() {
+    const modelNames = this.selectedRows.map(row => row.name);
+    if (modelNames.length === 0) {
+      alert('Please select at least one model to export.');
+      return;
+    }
+
+    this.service.downloadModels(modelNames).subscribe(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'models.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    });
+  }
+
+  onGridReady(params: any) {
+    params.api.addEventListener('cellClicked', (event: any) => {
+      if (
+        event.colDef.headerName === 'Actions' &&
+        event.event.target.classList.contains('preview-btn')
+      ) {
+        this.loadJsonPreview(event.data.filename);
+      }
+    });
+  }
+
+  loadJsonPreview(filename: string) {
+    this.service.getJsonPreview(filename).subscribe({
+      next: (json) => {
+        this.previewJson = json;
+        this.showModal = true;
+      },
+      error: () => alert('Failed to load JSON preview.')
+    });
+  }
+
+  closeModal() {
+    this.showModal = false;
+    this.previewJson = null;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ts
 // Updated import-export-manager.component.ts import { Component, OnInit } from '@angular/core'; import { HttpClient } from '@angular/common/http'; import { ColDef } from 'ag-grid-community'; import { ImportExportService } from './import-export.service';
 
