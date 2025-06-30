@@ -1,3 +1,84 @@
+<div class="manager-container">
+  <h2>Import-Export Manager</h2>  <div class="top-bar">
+    <div class="action-box" [class.active]="selectedTab === 'import'" (click)="selectTab('import')">
+      <mat-icon>cloud_upload</mat-icon>
+      <div>New Import</div>
+    </div><div class="action-box" [class.active]="selectedTab === 'export'" (click)="selectTab('export')">
+  <mat-icon>sync_alt</mat-icon>
+  <div>Model</div>
+</div>
+
+<div class="dropdown">
+  <label class="dropdown-label" [class.active]="selectedService">Choose*</label>
+  <mat-form-field appearance="outline" class="dropdown-field">
+    <mat-label>Select Recon Service</mat-label>
+    <mat-select [(ngModel)]="selectedService">
+      <mat-option *ngFor="let s of services" [value]="s">{{ s }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+</div>
+
+  </div>  <!-- Import Section -->  <div *ngIf="selectedTab === 'import'" class="import-section">
+    <mat-checkbox [(ngModel)]="overwrite" color="primary">Overwrite</mat-checkbox><div class="file-upload">
+  <button mat-raised-button color="primary" (click)="fileInput.click()">
+    <mat-icon>attach_file</mat-icon> Select File
+  </button>
+  <input type="file" #fileInput hidden (change)="onFileSelected($event)" />
+  <span *ngIf="!selectedFile">No file chosen</span>
+  <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
+</div>
+
+<button mat-raised-button color="accent" [disabled]="!selectedFile || !selectedService" (click)="upload()">
+  Upload
+</button>
+
+<div *ngIf="showModelTable" class="import-models-table">
+  <ag-grid-angular
+    class="ag-theme-alpine"
+    style="width: 100%; height: 300px;"
+    [rowData]="importData"
+    [columnDefs]="columnDefs"
+    rowSelection="multiple"
+    (gridReady)="onGridReady($event)">
+  </ag-grid-angular>
+</div>
+
+  </div>  <!-- Export Section -->  <div *ngIf="selectedTab === 'export'" class="export-section">
+    <div style="margin-bottom: 10px;">
+      <strong>Export Models ({{ selectedRows.length }} selected)</strong>
+    </div>
+    <ag-grid-angular
+      class="ag-theme-alpine"
+      style="width: 100%; height: 300px;"
+      [rowData]="exportData"
+      [columnDefs]="exportColumnDefs"
+      rowSelection="multiple"
+      (selectionChanged)="onSelectionChanged($event)">
+    </ag-grid-angular><button mat-raised-button color="primary" style="margin-top: 10px;" (click)="exportSelectedModels()" [disabled]="selectedRows.length === 0">
+  Export
+</button>
+
+  </div>  <!-- Preview Modal -->  <div *ngIf="showModal" class="modal">
+    <div class="modal-content">
+      <h3>JSON Preview</h3>
+      <pre>{{ previewJson }}</pre>
+      <button mat-button (click)="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
