@@ -1,3 +1,41 @@
+/* Checkbox fill color */
+.mat-checkbox-checked.mat-accent .mat-checkbox-background,
+.mat-checkbox-indeterminate.mat-accent .mat-checkbox-background {
+  background-color: rgb(0, 110, 121) !important;
+}
+
+/* Checkbox outline color */
+.mat-checkbox.mat-accent .mat-checkbox-frame {
+  border-color: rgb(0, 110, 121) !important;
+}
+
+/* Checkbox label color */
+.mat-checkbox-checked.mat-accent .mat-checkbox-layout .mat-checkbox-label {
+  color: rgb(0, 110, 121) !important;
+}
+
+/* Form field border */
+.mat-form-field-appearance-outline .mat-form-field-outline {
+  border-color: rgb(0, 110, 121) !important;
+}
+
+/* Form field label */
+.mat-form-field-label {
+  color: rgb(0, 110, 121) !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* Checkbox tick and border color */
 ::ng-deep .mat-checkbox-checked.mat-accent .mat-checkbox-background {
   background-color: rgb(0, 110, 121) !important;
