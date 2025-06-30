@@ -1,6 +1,23 @@
-::ng-deep .mat-form-field-outline {
+.mat-checkbox-checked.mat-accent .mat-checkbox-background {
+  background-color: rgb(0, 110, 121) !important;
+}
+
+.mat-checkbox.mat-accent .mat-checkbox-frame {
+  border-color: rgb(0, 110, 121) !important;
+}
+
+.mat-form-field-appearance-outline .mat-form-field-outline {
   color: rgb(0, 110, 121) !important;
   border-color: rgb(0, 110, 121) !important;
+}
+
+.mat-form-field-appearance-outline .mat-form-field-outline-thick {
+  color: rgb(0, 110, 121) !important;
+  border-color: rgb(0, 110, 121) !important;
+}
+
+.mat-form-field-label {
+  color: rgb(0, 110, 121) !important;
 }
 
 
