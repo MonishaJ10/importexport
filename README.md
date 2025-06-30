@@ -1,3 +1,126 @@
+// Updated FileImportController.java @RestController @RequestMapping("/api/import") @CrossOrigin public class FileImportController {
+
+@Autowired
+private ImportMetadataRepository repository;
+
+@Autowired
+private ReconServiceRepository reconServiceRepository;
+
+private final String uploadDir = System.getProperty("user.home") + "/Downloads/";
+
+@PostMapping("/upload")
+public ResponseEntity<Map<String, String>> upload(@RequestParam("file") MultipartFile file,
+                                                  @RequestParam("service") String service,
+                                                  @RequestParam("overwrite") boolean overwrite) {
+    try {
+        Path targetPath = Paths.get(uploadDir + file.getOriginalFilename());
+        Files.createDirectories(targetPath.getParent());
+        Files.write(targetPath, file.getBytes(), StandardOpenOption.CREATE);
+
+        ImportMetadata metadata = new ImportMetadata();
+        metadata.setFilename(file.getOriginalFilename());
+        metadata.setService(service);
+        metadata.setOverwriteFlag(overwrite ? 'Y' : 'N');
+        repository.save(metadata);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "File uploaded and metadata saved.");
+        return ResponseEntity.ok(response);
+    } catch (IOException e) {
+        Map<String, String> error = new HashMap<>();
+        e.printStackTrace();
+        error.put("error", "Upload failed: " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+}
+
+@GetMapping("/json/{filename}")
+public ResponseEntity<String> getUploadedJson(@PathVariable String filename) {
+    try {
+        Path path = Paths.get(uploadDir + filename);
+        if (!Files.exists(path)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found.");
+        }
+        String content = Files.readString(path);
+        return ResponseEntity.ok(content);
+    } catch (IOException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to read file.");
+    }
+}
+
+@GetMapping("/services")
+public ResponseEntity<List<String>> getAvailableServices() {
+    List<String> services = reconServiceRepository.findAllServiceNames();
+    return ResponseEntity.ok(services);
+}
+
+}
+
+// Updated ModelExportController.java @RestController @RequestMapping("/api/export") public class ModelExportController {
+
+@Autowired
+private ModelExportService exportService;
+
+@GetMapping("/export-models")
+public List<ExportModelDTO> getAllExportModels() {
+    String sql = "SELECT name, description, service, context, frequency, model_mode FROM recon_models";
+    return exportService.getAllModels(sql);
+}
+
+@PostMapping("/download")
+public ResponseEntity<Resource> downloadModels(@RequestBody List<String> modelNames) throws IOException {
+    List<ExportModelDTO> models = exportService.getModelsByNames(modelNames);
+    if (models.isEmpty()) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+    }
+
+    ByteArrayOutputStream zipOutStream = new ByteArrayOutputStream();
+    ZipOutputStream zos = new ZipOutputStream(zipOutStream);
+
+    for (ExportModelDTO model : models) {
+        String safeName = model.getName().replaceAll("[^a-zA-Z0-9_-]", "_");
+        String json = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(model);
+        ZipEntry entry = new ZipEntry(safeName + ".json");
+        zos.putNextEntry(entry);
+        zos.write(json.getBytes(StandardCharsets.UTF_8));
+        zos.closeEntry();
+    }
+
+    zos.finish();
+    zos.close();
+
+    ByteArrayResource resource = new ByteArrayResource(zipOutStream.toByteArray());
+    return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=models.zip")
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .body(resource);
+}
+
+}
+
+// DTO and Model remain unchanged
+
+// Ensure the method in repository is correct public interface ReconServiceRepository { @Query("SELECT DISTINCT service FROM recon_models") List<String> findAllServiceNames(); }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { Component, OnInit } from '@angular/core';
 import { ImportExportService } from './import-export.service';
 import { ColDef } from 'ag-grid-community';
