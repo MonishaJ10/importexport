@@ -1,5 +1,114 @@
 <div class="manager-container">
   <h2>Import-Export Manager</h2>
+
+  <div class="top-bar">
+    <!-- Import Tab -->
+    <div class="action-box" [class.active]="selectedTab === 'import'" (click)="selectTab('import')">
+      <mat-icon>cloud_upload</mat-icon>
+      <div>New Import</div>
+    </div>
+
+    <!-- Export Tab -->
+    <div class="action-box" [class.active]="selectedTab === 'export'" (click)="selectTab('export')">
+      <mat-icon>sync_alt</mat-icon>
+      <div>Model</div>
+    </div>
+
+    <!-- Dropdown visible only when Import tab is active -->
+    <div class="dropdown" *ngIf="selectedTab === 'import'">
+      <label class="dropdown-label" [class.active]="selectedService" style="color: black;">Choose*</label>
+
+      <mat-form-field appearance="outline" class="dropdown-field" style="color: rgb(0, 110, 121);">
+        <mat-label style="color: rgb(0, 110, 121);">Select Recon Service</mat-label>
+        <mat-select [(ngModel)]="selectedService" panelClass="custom-select-panel">
+          <mat-option *ngFor="let s of services" [value]="s">{{ s }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <!-- Import Section -->
+  <div *ngIf="selectedTab === 'import'" class="import-section">
+    <mat-checkbox [(ngModel)]="overwrite" style="color: rgb(0, 110, 121);">Overwrite</mat-checkbox>
+
+    <div class="file-upload">
+      <button mat-raised-button style="background-color: rgb(0, 110, 121); color: white;" (click)="fileInput.click()">
+        <mat-icon>attach_file</mat-icon> Select File To Import
+      </button>
+      <input type="file" #fileInput hidden (change)="onFileSelected($event)" />
+
+      <span *ngIf="!selectedFile">No file chosen</span>
+      <span *ngIf="selectedFile">{{ selectedFile.name }}</span>
+    </div>
+
+    <button mat-raised-button style="background-color: rgb(0, 110, 121); color: white;"
+            [disabled]="!selectedFile || !selectedService" (click)="upload()">
+      Upload
+    </button>
+
+    <div *ngIf="showModelTable" class="import-models-table">
+      <ag-grid-angular
+        class="ag-theme-alpine"
+        style="width: 100%; height: 300px;"
+        [rowData]="importRowData"
+        [columnDefs]="columnDefs"
+        rowSelection="multiple"
+        (gridReady)="onGridReady($event)">
+      </ag-grid-angular>
+    </div>
+  </div>
+
+  <!-- Export Section -->
+  <div *ngIf="selectedTab === 'export'" class="export-section">
+    <div style="margin-bottom: 10px;">
+      <strong>Export Models ({{ selectedRows.length }} selected)</strong>
+    </div>
+
+    <ag-grid-angular
+      class="ag-theme-alpine"
+      style="width: 100%; height: 300px;"
+      [rowData]="exportRowData"
+      [columnDefs]="exportColumnDefs"
+      rowSelection="multiple"
+      (selectionChanged)="onSelectionChanged($event)">
+    </ag-grid-angular>
+
+    <button mat-raised-button style="margin-top: 10px; background-color: rgb(0, 110, 121); color: white;"
+            (click)="exportSelectedModels()" [disabled]="selectedRows.length === 0">
+      Export
+    </button>
+  </div>
+
+  <!-- Preview Modal -->
+  <div *ngIf="showModal" class="modal">
+    <div class="modal-content">
+      <h3>JSON Preview</h3>
+      <pre>{{ previewJson }}</pre>
+      <button mat-button (click)="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="manager-container">
+  <h2>Import-Export Manager</h2>
   <div class="top-bar">
     <div class="action-box" [class.active]="selectedTab === 'import'" (click)="selectTab('import')">
       <mat-icon>cloud_upload</mat-icon>
