@@ -1,4 +1,148 @@
 <div class="manager-container">
+  <h2>Import-Export Manager</h2>
+  <div class="top-bar">
+    <div class="action-box" [class.active]="selectedTab === 'import'" (click)="selectTab('import')">
+      <mat-icon>cloud_upload</mat-icon>
+      <div>New Import</div>
+    </div>
+    <div class="action-box" [class.active]="selectedTab === 'export'" (click)="selectTab('export')">
+      <mat-icon>sync_alt</mat-icon>
+      <div>Model</div>
+    </div>
+    <div class="dropdown-box">
+      <label [class.active]="selectedService">Choose*</label>
+      <mat-form-field appearance="outline" class="dropdown">
+        <mat-label>Select Recon Service</mat-label>
+        <mat-select [(ngModel)]="selectedService">
+          <mat-option *ngFor="let s of services" [value]="s">{{ s }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div *ngIf="selectedTab === 'import'" class="import-section">
+    <mat-checkbox [(ngModel)]="overwrite" color="primary">Overwrite</mat-checkbox>
+
+    <div class="file-upload">
+      <button mat-raised-button color="primary" (click)="fileInput.click()">
+        <mat-icon>attach_file</mat-icon> Select File
+      </button>
+      <input type="file" #fileInput hidden (change)="onFileSelected($event)" />
+      <span>{{ selectedFile?.name || 'No file chosen' }}</span>
+    </div>
+
+    <button mat-raised-button color="accent" [disabled]="!selectedFile || !selectedService" (click)="upload()">
+      Upload
+    </button>
+  </div>
+
+  <div *ngIf="selectedTab === 'export'" class="export-section">
+    <p><strong>Export Models ({{ selectedRows.length }} selected)</strong></p>
+    <ag-grid-angular
+      class="ag-theme-alpine"
+      style="width: 100%; height: 300px;"
+      [rowData]="exportData"
+      [columnDefs]="exportColumnDefs"
+      rowSelection="multiple"
+      (selectionChanged)="onSelectionChanged($event)">
+    </ag-grid-angular>
+
+    <button mat-raised-button color="primary" style="margin-top: 10px;" (click)="exportSelectedModels()" [disabled]="selectedRows.length === 0">
+      Export
+    </button>
+  </div>
+</div>
+
+
+.manager-container {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+.top-bar {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.action-box {
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-align: center;
+  cursor: pointer;
+  min-width: 100px;
+  color: #007bff;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.action-box:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+.action-box.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.dropdown-box label {
+  font-weight: bold;
+  color: #000;
+  margin-bottom: 5px;
+  display: block;
+}
+
+.dropdown-box label.active {
+  color: #007bff;
+}
+
+.dropdown {
+  min-width: 200px;
+}
+
+.file-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 15px 0;
+}
+
+mat-checkbox {
+  margin-top: 10px;
+}
+
+.import-section, .export-section {
+  margin-top: 20px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="manager-container">
   <h2>Import-Export Manager</h2>  <div class="top-bar">
     <div class="action-box" [class.active]="selectedTab === 'import'" (click)="selectTab('import')">
       <mat-icon>cloud_upload</mat-icon>
