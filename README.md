@@ -1,3 +1,34 @@
+/* Apply teal color to checked box background */
+.mat-checkbox-checked.mat-accent .mat-checkbox-background {
+  background-color: rgb(0, 110, 121) !important;
+}
+
+/* Apply teal color to checkbox border */
+.mat-checkbox.mat-accent .mat-checkbox-frame {
+  border-color: rgb(0, 110, 121) !important;
+}
+
+
+
+::ng-deep .mat-checkbox-checked.mat-accent .mat-checkbox-background {
+  background-color: rgb(0, 110, 121) !important;
+}
+
+::ng-deep .mat-checkbox.mat-accent .mat-checkbox-frame {
+  border-color: rgb(0, 110, 121) !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 .mat-checkbox-checked.mat-accent .mat-checkbox-background {
   background-color: rgb(0, 110, 121) !important;
 }
