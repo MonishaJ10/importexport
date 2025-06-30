@@ -1,3 +1,55 @@
+upload() {
+  if (!this.selectedFile || !this.selectedService) {
+    alert('Please select a service and a file.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', this.selectedFile);
+  formData.append('service', this.selectedService);
+  formData.append('overwrite', String(this.overwrite));
+
+  this.service.upload(formData).subscribe({
+    next: () => {
+      console.log('Upload successful');
+      this.fetchImportTable();  // ✅ Ensure table loads after upload
+      this.selectedFile = null;
+      this.showModelTable = true;  // ✅ This must be true to display the AG Grid
+    },
+    error: (err) => {
+      console.error('Upload failed:', err);
+      alert('Upload failed.');
+    }
+  });
+}
+
+
+fetchImportTable() {
+  this.service.getImportMetadata().subscribe({
+    next: (data) => {
+      console.log('Fetched import metadata:', data);
+      this.rowData = data;
+    },
+    error: (err) => {
+      console.error('Failed to load import metadata:', err);
+    }
+  });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 getImportMetadata(): Observable<any[]> {
   return this.http.get<any[]>('http://localhost:8080/api/import/metadata');
 }
