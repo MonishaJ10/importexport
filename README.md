@@ -1,3 +1,16 @@
+getImportMetadata(): Observable<any[]> {
+  return this.http.get<any[]>('http://localhost:8080/api/import/metadata');
+}
+
+
+
+
+
+
+
+
+
+
 <div class="manager-container">
   <h2>Import-Export Manager</h2>  <div class="top-bar">
     <button mat-raised-button color="primary" [class.active]="selectedTab === 'import'" (click)="selectTab('import')">
