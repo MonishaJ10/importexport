@@ -1,3 +1,42 @@
+<div style="padding: 20px;">
+  <h2>Import-Export Manager</h2>
+
+  <div style="display: flex; gap: 40px;">
+    <!-- Import Section -->
+    <div style="text-align: center;">
+      <p><strong>Import</strong></p>
+      <button mat-raised-button color="primary" style="min-width: 120px;">
+        <mat-icon>cloud_upload</mat-icon>
+        New Import
+      </button>
+    </div>
+
+    <!-- Export Section -->
+    <div style="text-align: center;">
+      <p><strong>Export</strong></p>
+      <button mat-raised-button color="accent" style="min-width: 120px;">
+        <mat-icon>compare_arrows</mat-icon>
+        Model
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @PostMapping("/download")
 public ResponseEntity<Resource> downloadModels(@RequestBody List<String> modelNames) throws IOException {
     List<ExportModelDTO> models = exportService.getModelsByNames(modelNames);
