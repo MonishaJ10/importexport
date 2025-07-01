@@ -1,3 +1,22 @@
+::ng-deep .import-export-manager-container .mat-checkbox-checked.mat-accent .mat-checkbox-background {
+  background-color: rgb(0, 110, 121) !important;
+}
+
+::ng-deep .import-export-manager-container .mat-checkbox.mat-accent .mat-checkbox-frame {
+  border-color: rgb(0, 110, 121) !important;
+}
+
+::ng-deep .import-export-manager-container .mat-checkbox-checked .mat-checkbox-layout .mat-checkbox-label {
+  color: rgb(0, 110, 121) !important;
+}
+
+
+
+
+
+
+
+
 /* Checkbox fill color */
 .mat-checkbox-checked.mat-accent .mat-checkbox-background,
 .mat-checkbox-indeterminate.mat-accent .mat-checkbox-background {
