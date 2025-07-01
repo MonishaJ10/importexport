@@ -1,3 +1,20 @@
+$uinextgen-primary: mat.define-palette(mat.$indigo-palette);
+$uinextgen-accent: mat.define-palette(mat.$teal-palette, A200, A100, A400); // ✅ Changed to teal
+$uinextgen-warn: mat.define-palette(mat.$red-palette);
+
+$uinextgen-theme: mat.define-light-theme((
+  color: (
+    primary: $uinextgen-primary,
+    accent: $uinextgen-accent,
+    warn: $uinextgen-warn,
+  ),
+  typography: mat.define-typography-config(),
+  density: 0
+));
+
+
+
+
 
 
 .manager-container {
