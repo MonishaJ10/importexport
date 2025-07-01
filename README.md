@@ -1,3 +1,22 @@
+:host ::ng-deep mat-checkbox.mat-accent .mat-checkbox-background {
+  background-color: rgb(0, 110, 121) !important;
+}
+
+:host ::ng-deep mat-checkbox.mat-accent .mat-checkbox-frame {
+  border-color: rgb(0, 110, 121) !important;
+}
+
+:host ::ng-deep mat-checkbox.mat-accent.mat-checkbox-checked .mat-checkbox-checkmark-path {
+  stroke: white !important; /* Optional: makes checkmark visible */
+}
+
+
+
+
+
+
+
+
 $uinextgen-primary: mat.define-palette(mat.$indigo-palette);
 $uinextgen-accent: mat.define-palette(mat.$teal-palette, A200, A100, A400); // ✅ Changed to teal
 $uinextgen-warn: mat.define-palette(mat.$red-palette);
