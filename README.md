@@ -1,3 +1,18 @@
+.manager-container {
+  max-width: 900px;         /* limit width */
+  margin: 0 auto;           /* center it */
+  padding: 16px;            /* spacing inside */
+  font-size: 14px;          /* reduce font size */
+  transform: scale(0.95);   /* slightly scale down everything */
+}
+
+
+
+
+
+
+
+
 ::ng-deep .import-export-manager-container .mat-checkbox-checked.mat-accent .mat-checkbox-background {
   background-color: rgb(0, 110, 121) !important;
 }
