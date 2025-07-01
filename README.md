@@ -1,3 +1,26 @@
+:host ::ng-deep .mat-mdc-checkbox.mat-accent .mdc-checkbox__background {
+  background-color: rgb(0, 110, 121) !important;
+  border-color: rgb(0, 110, 121) !important;
+}
+
+:host ::ng-deep .mat-mdc-checkbox.mat-accent .mdc-checkbox__ripple {
+  background-color: rgb(0, 110, 121) !important;
+}
+
+:host ::ng-deep .mat-mdc-checkbox.mat-accent .mdc-checkbox__checkmark-path {
+  stroke: white !important;
+}
+
+
+
+
+
+
+
+
+
+
+
 :host ::ng-deep mat-checkbox.mat-accent .mat-checkbox-background {
   background-color: rgb(0, 110, 121) !important;
 }
