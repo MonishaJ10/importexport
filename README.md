@@ -1,3 +1,72 @@
+export model DTO 
+@Data
+public class ExportModelDTO {
+    private String name;
+    private String description;
+    private String service;
+    private String context;
+    private String frequency;
+    private String modelMode;
+    private List<ReconModelField> fields;
+    private List<ReconModelRuleDTO> matchRules;
+}
+
+recon model rule DTO
+@Data
+public class ReconModelRuleDTO {
+    private String ruleName;
+    private int priority;
+    private List<ReconRuleCondition> matchConditions;
+}
+
+Entities
+recon model rule.java
+@Entity
+@Table(name = "recon_model_rules")
+@Data
+public class ReconModelRule {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String modelName;
+    private String ruleName;
+    private int priority;
+}
+
+recon model field.java
+@Entity
+@Table(name = "recon_model_fields")
+@Data
+public class ReconModelField {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String modelName;
+    private String fieldName;
+    private String fieldType;
+    private String aggregation;
+    private char isKey;
+}
+
+recon rule condition.java
+@Entity
+@Table(name = "recon_rule_conditions")
+@Data
+public class ReconRuleCondition {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long ruleId;
+    private String leftField;
+    private String operator;
+    private String rightField;
+}
+
+
+-_---------------------------------
 INSERT INTO recon_model_fields (model_name, field_name, field_type, is_key, aggregation)
 VALUES ('Switzerland_Settlement', 'SettlementId', 'STRING', 'Y', NULL);
 
