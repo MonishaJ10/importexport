@@ -1,4 +1,33 @@
 INSERT INTO recon_model_fields (model_name, field_name, field_type, is_key, aggregation)
+VALUES ('Switzerland_Settlement', 'SettlementId', 'STRING', 'Y', NULL);
+
+INSERT INTO recon_model_fields (model_name, field_name, field_type, is_key, aggregation)
+VALUES ('Switzerland_Settlement', 'NetAmount', 'DECIMAL', 'N', 'SUM');
+
+INSERT INTO recon_model_fields (model_name, field_name, field_type, is_key, aggregation)
+VALUES ('Switzerland_Settlement', 'Currency', 'STRING', 'N', NULL);
+
+INSERT INTO recon_model_rules (model_name, rule_name, priority)
+VALUES ('Switzerland_Settlement', 'MatchBySettlementId', 1);
+
+SELECT id FROM recon_model_rules WHERE model_name = 'Switzerland_Settlement' AND rule_name = 'MatchBySettlementId';
+
+INSERT INTO recon_rule_conditions (rule_id, left_field, operator, right_field)
+VALUES (3, 'SettlementId', 'EQUALS', 'SettlementId');
+
+
+
+
+
+
+
+
+
+
+
+
+
+INSERT INTO recon_model_fields (model_name, field_name, field_type, is_key, aggregation)
 VALUES ('Germany_Nostro', 'TransactionId', 'STRING', 'Y', NULL);
 
 INSERT INTO recon_model_fields (model_name, field_name, field_type, is_key, aggregation)
