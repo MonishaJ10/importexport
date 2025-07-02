@@ -1,3 +1,64 @@
+package com.example.work.controller;
+
+import com.example.work.dto.ExportModelDTO;
+import com.example.work.service.EnhancedModelExportService;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+@RestController
+@RequestMapping("/api/import")
+public class EnhancedModelExportController {
+
+    @Autowired
+    private EnhancedModelExportService enhancedModelExportService;
+
+    @PostMapping("/export-models")
+    public ResponseEntity<ByteArrayResource> exportSelectedModels(@RequestBody List<String> modelNames) throws IOException {
+        List<ExportModelDTO> models = enhancedModelExportService.exportSelectedModels(modelNames);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ZipOutputStream zos = new ZipOutputStream(baos);
+        ObjectMapper mapper = new ObjectMapper();
+
+        for (ExportModelDTO model : models) {
+            String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(model);
+            ZipEntry entry = new ZipEntry(model.getName().replaceAll("\\s+", "_") + ".json");
+            zos.putNextEntry(entry);
+            zos.write(json.getBytes());
+            zos.closeEntry();
+        }
+
+        zos.close();
+
+        ByteArrayResource resource = new ByteArrayResource(baos.toByteArray());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=models.zip")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentLength(resource.contentLength())
+                .body(resource);
+    }
+}
+
+
+
+
+
+
+
 package com.example.work.service;
 
 import com.example.work.dto.ExportModelDTO;
