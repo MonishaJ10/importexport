@@ -1,3 +1,32 @@
+package com.example.work.model;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+@Entity
+@Table(name = "recon_models")
+@Data
+public class ReconModel {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+    private String description;
+    private String service;
+    private String context;
+    private String frequency;
+
+    @Column(name = "model_mode")
+    private String modelMode;
+}
+
+
+
+
+
+
 package com.example.work.service;
 
 import com.example.work.dto.ExportModelDTO;
