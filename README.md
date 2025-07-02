@@ -1,3 +1,58 @@
+
+
+
+@PostMapping("/upload")
+public ResponseEntity<Map<String, String>> upload(
+        @RequestParam("file") MultipartFile file,
+        @RequestParam("service") String service,
+        @RequestParam("overwrite") boolean overwrite) {
+
+    try {
+        String uploadDir = System.getProperty("user.home") + "/Downloads/";
+        Path targetPath = Paths.get(uploadDir + file.getOriginalFilename());
+
+        Files.createDirectories(targetPath.getParent());
+        Files.write(targetPath, file.getBytes(), StandardOpenOption.CREATE);
+
+        ImportMetadata metadata = new ImportMetadata();
+        metadata.setFilename(file.getOriginalFilename());
+        metadata.setService(service);
+        metadata.setOverwriterlag(overwrite ? 'Y' : 'N');
+        metadata.setFileSize(file.getSize()); // ✅ Set file size in bytes
+        metadata.setImportStatus("Success");  // ✅ Hardcoded for now — or set based on logic
+
+        repository.save(metadata);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "File uploaded and metadata saved.");
+        return ResponseEntity.ok(response);
+
+    } catch (IOException e) {
+        e.printStackTrace();
+
+        // Save failed metadata if needed
+        ImportMetadata metadata = new ImportMetadata();
+        metadata.setFilename(file.getOriginalFilename());
+        metadata.setService(service);
+        metadata.setOverwriterlag(overwrite ? 'Y' : 'N');
+        metadata.setImportStatus("Failure"); // ✅ Mark as failure
+
+        repository.save(metadata);
+
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Upload failed: " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+}
+
+
+
+
+
+
+
+
+
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
