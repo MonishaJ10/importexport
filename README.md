@@ -1,4 +1,34 @@
 INSERT INTO recon_model_fields (model_name, field_name, field_type, is_key, aggregation)
+VALUES ('Germany_Nostro', 'TransactionId', 'STRING', 'Y', NULL);
+
+INSERT INTO recon_model_fields (model_name, field_name, field_type, is_key, aggregation)
+VALUES ('Germany_Nostro', 'Amount', 'DECIMAL', 'N', 'SUM');
+
+INSERT INTO recon_model_fields (model_name, field_name, field_type, is_key, aggregation)
+VALUES ('Germany_Nostro', 'Currency', 'STRING', 'N', NULL);
+
+INSERT INTO recon_model_rules (model_name, rule_name, priority)
+VALUES ('Germany_Nostro', 'MatchByTxnID', 1);
+
+SELECT id FROM recon_model_rules WHERE model_name = 'Germany_Nostro' AND rule_name = 'MatchByTxnID';
+
+INSERT INTO recon_rule_conditions (rule_id, left_field, operator, right_field)
+VALUES (2, 'TransactionId', 'EQUALS', 'TransactionId');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+INSERT INTO recon_model_fields (model_name, field_name, field_type, is_key, aggregation)
 VALUES ('Germany_Holdings', 'TransactionId', 'STRING', 'Y', NULL);
 
 INSERT INTO recon_model_fields (model_name, field_name, field_type, is_key, aggregation)
