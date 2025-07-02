@@ -1,3 +1,19 @@
+public interface FieldRepository extends JpaRepository<ReconModelField, Long> {
+    List<ReconModelField> findByModelName(String modelName);
+}
+
+public interface RuleRepository extends JpaRepository<ReconModelRule, Long> {
+    List<ReconModelRule> findByModelName(String modelName);
+}
+
+public interface ConditionRepository extends JpaRepository<ReconRuleCondition, Long> {
+    List<ReconRuleCondition> findByRuleId(Long ruleId);
+}
+
+
+
+
+
 export model DTO 
 @Data
 public class ExportModelDTO {
