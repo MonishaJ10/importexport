@@ -1,3 +1,96 @@
+@RestController
+@RequestMapping("/api/import")
+@CrossOrigin
+public class FileImportController {
+
+    @Autowired
+    private ImportMetadataRepository repository;
+
+    @Autowired
+    private ReconserviceRepository reconserviceRepository;
+
+    private final String uploadDir = System.getProperty("user.home") + "/Downloads/";
+
+    @PostMapping("/upload")
+    public ResponseEntity<Map<String, String>> upload(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("service") String service,
+            @RequestParam("overwrite") boolean overwrite
+    ) {
+        Map<String, String> response = new HashMap<>();
+
+        try {
+            Path targetPath = Paths.get(uploadDir + file.getOriginalFilename());
+            Files.createDirectories(targetPath.getParent());
+            Files.write(targetPath, file.getBytes(), StandardOpenOption.CREATE);
+
+            ImportMetadata metadata = new ImportMetadata();
+            metadata.setFilename(file.getOriginalFilename());
+            metadata.setService(service);
+            metadata.setOverwriteFlag(overwrite ? 'Y' : 'N');
+            metadata.setFileSize(file.getSize()); // <-- Set file size
+            metadata.setImportStatus("Success");  // <-- Set status
+
+            repository.save(metadata);
+
+            response.put("message", "File uploaded and metadata saved.");
+            return ResponseEntity.ok(response);
+        } catch (IOException e) {
+            e.printStackTrace();
+
+            ImportMetadata metadata = new ImportMetadata();
+            metadata.setFilename(file.getOriginalFilename());
+            metadata.setService(service);
+            metadata.setOverwriteFlag(overwrite ? 'Y' : 'N');
+            metadata.setFileSize(file.getSize()); // still capture size
+            metadata.setImportStatus("Failure");  // <-- Failed status
+
+            repository.save(metadata);
+
+            response.put("error", "Upload failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    @GetMapping("/json/{filename}")
+    public ResponseEntity<String> getUploadedJson(@PathVariable String filename) {
+        try {
+            Path path = Paths.get(uploadDir + filename);
+            if (!Files.exists(path)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found.");
+            }
+
+            String content = Files.readString(path);
+            return ResponseEntity.ok(content);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to read file.");
+        }
+    }
+
+    @GetMapping("/services")
+    public ResponseEntity<List<String>> getAvailableServices() {
+        List<String> services = reconserviceRepository.findAllServiceNames();
+        return ResponseEntity.ok(services);
+    }
+
+    @GetMapping("/metadata")
+    public ResponseEntity<List<ImportMetadata>> getAllImportMetadata() {
+        List<ImportMetadata> list = repository.findAll(Sort.by(Sort.Direction.DESC, "uploadedAt"));
+        return ResponseEntity.ok(list);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 :host ::ng-deep .mat-mdc-checkbox.mat-accent .mdc-checkbox__background {
   background-color: rgb(0, 110, 121) !important;
   border-color: rgb(0, 110, 121) !important;
