@@ -1,3 +1,14 @@
+ALTER TABLE import_metadata ADD file_size NUMBER;
+ALTER TABLE import_metadata ADD import_status VARCHAR2(20);
+
+
+
+
+
+
+
+
+
 @RestController
 @RequestMapping("/api/import")
 @CrossOrigin
