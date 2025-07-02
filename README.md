@@ -1,4 +1,100 @@
 model export service 
+
+package com.example.work.service;
+
+import com.example.work.dto.ExportModelDTO;
+import com.example.work.dto.ReconModelRuleDTO;
+import com.example.work.model.*;
+import com.example.work.repository.*;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+public class ModelExportService {
+
+    @Autowired
+    private ReconModelRepository reconModelRepository;
+
+    @Autowired
+    private FieldRepository fieldRepository;
+
+    @Autowired
+    private RuleRepository ruleRepository;
+
+    @Autowired
+    private ConditionRepository conditionRepository;
+
+    // For POST /download
+    public List<ExportModelDTO> getModelsByNames(List<String> modelNames) {
+        List<ExportModelDTO> result = new ArrayList<>();
+
+        for (String name : modelNames) {
+            ReconModel model = reconModelRepository.findByName(name);
+            if (model == null) continue;
+
+            ExportModelDTO dto = new ExportModelDTO();
+            dto.setName(model.getName());
+            dto.setDescription(model.getDescription());
+            dto.setService(model.getService());
+            dto.setContext(model.getContext());
+            dto.setFrequency(model.getFrequency());
+            dto.setModelMode(model.getModelMode());
+
+            // Fields
+            List<ReconModelField> fields = fieldRepository.findByModelName(name);
+            dto.setFields(fields);
+
+            // Rules & Conditions
+            List<ReconModelRule> rules = ruleRepository.findByModelName(name);
+            List<ReconModelRuleDTO> ruleDTOs = new ArrayList<>();
+
+            for (ReconModelRule rule : rules) {
+                ReconModelRuleDTO ruleDTO = new ReconModelRuleDTO();
+                ruleDTO.setRuleName(rule.getRuleName());
+                ruleDTO.setPriority(rule.getPriority());
+
+                List<ReconRuleCondition> conditions = conditionRepository.findByRuleId(rule.getId());
+                ruleDTO.setMatchConditions(conditions);
+
+                ruleDTOs.add(ruleDTO);
+            }
+
+            dto.setMatchRules(ruleDTOs);
+            result.add(dto);
+        }
+
+        return result;
+    }
+
+    // For GET /export-models
+    public List<ExportModelDTO> getAllModels() {
+        List<ReconModel> models = reconModelRepository.findAll();
+        List<ExportModelDTO> result = new ArrayList<>();
+
+        for (ReconModel model : models) {
+            ExportModelDTO dto = new ExportModelDTO();
+            dto.setName(model.getName());
+            dto.setDescription(model.getDescription());
+            dto.setService(model.getService());
+            dto.setContext(model.getContext());
+            dto.setFrequency(model.getFrequency());
+            dto.setModelMode(model.getModelMode());
+            result.add(dto);
+        }
+
+        return result;
+    }
+}
+
+
+
+
+
+
 @Service
 public class ModelExportService {
 
