@@ -1,3 +1,221 @@
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { AgGridModule, ColDef } from 'ag-grid-angular';
+import { ImportExportService } from './import-export.service';
+
+@Component({
+  selector: 'app-import-export-manager',
+  standalone: true,
+  templateUrl: './import-export-manager.component.html',
+  styleUrls: ['./import-export-manager.component.css'],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatCheckboxModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatIconModule,
+    AgGridModule
+  ]
+})
+export class ImportExportManagerComponent implements OnInit {
+  selectedTab: 'import' | 'export' = 'import';
+
+  services: string[] = [];
+  selectedService = '';
+  overwrite = false;
+  selectedFile: File | null = null;
+
+  importRowData: any[] = [];
+  exportRowData: any[] = [];
+  selectedRows: any[] = [];
+
+  showModal = false;
+  previewJson: string | null = null;
+  showModelTable = false;
+
+  columnDefs: ColDef[] = [
+    { headerName: '', checkboxSelection: true, width: 50 },
+    { field: 'filename', headerName: 'Model' },
+    { field: 'overwriteFlag', headerName: 'Mode' },
+    { field: 'uploadedAt', headerName: 'Uploaded At' },
+    { field: 'service', headerName: 'Service' },
+    { field: 'fileSize', headerName: 'File Size (KB)', valueFormatter: this.formatSize },
+    {
+      field: 'importStatus',
+      headerName: 'Status',
+      cellRenderer: (params: any) => {
+        const status = params.value;
+        const color = status === 'Success' ? 'rgb(0,110,121)' : 'red';
+        return `<span style="color: ${color}; font-weight: 600;">${status}</span>`;
+      }
+    },
+    {
+      headerName: 'Actions',
+      cellRenderer: () => '<button class="preview-btn">Preview</button>',
+      width: 100
+    }
+  ];
+
+  exportColumnDefs: ColDef[] = [
+    { headerName: '', checkboxSelection: true, width: 50 },
+    { field: 'name', headerName: 'Model' },
+    { field: 'model_mode', headerName: 'Mode' },
+    { field: 'frequency', headerName: 'Frequency' },
+    { field: 'context', headerName: 'Context' },
+    { field: 'service', headerName: 'Service' }
+  ];
+
+  constructor(private service: ImportExportService) {}
+
+  ngOnInit(): void {
+    this.fetchServices();
+    this.fetchExportModels();
+  }
+
+  selectTab(tab: 'import' | 'export') {
+    this.selectedTab = tab;
+    if (tab === 'export') {
+      this.fetchExportModels();
+    }
+  }
+
+  fetchServices() {
+    this.service.getServices().subscribe({
+      next: (data) => this.services = data,
+      error: () => alert('Failed to load services.')
+    });
+  }
+
+  onFileSelected(event: any) {
+    this.selectedFile = event.target.files[0];
+  }
+
+  upload() {
+    if (!this.selectedFile || !this.selectedService) {
+      alert('Please select a service and a file.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', this.selectedFile);
+    formData.append('service', this.selectedService);
+    formData.append('overwrite', String(this.overwrite));
+
+    this.service.upload(formData).subscribe({
+      next: () => {
+        console.log('Upload successful');
+        this.fetchImportTable();
+        this.selectedFile = null;
+        this.showModelTable = true;
+      },
+      error: (err) => {
+        console.error('Upload failed:', err);
+        alert('Upload failed.');
+      }
+    });
+  }
+
+  fetchImportTable() {
+    this.service.getImportMetadata().subscribe({
+      next: (data) => {
+        console.log('Fetched import metadata:', data);
+        this.importRowData = data;
+      },
+      error: (err) => {
+        console.error('Failed to load import metadata:', err);
+      }
+    });
+  }
+
+  fetchExportModels() {
+    this.service.getExportModels().subscribe({
+      next: (data) => this.exportRowData = data,
+      error: () => alert('Failed to load export models.')
+    });
+  }
+
+  onSelectionChanged(event: any) {
+    this.selectedRows = event.api.getSelectedRows();
+  }
+
+  exportSelectedModels() {
+    const modelNames = this.selectedRows.map(row => row.name);
+    if (modelNames.length === 0) {
+      alert('No models selected for export.');
+      return;
+    }
+
+    this.service.downloadModels(modelNames).subscribe(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'models.zip';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    });
+  }
+
+  onGridReady(params: any) {
+    params.api.addEventListener('cellClicked', (event: any) => {
+      if (
+        event.colDef.headerName === 'Actions' &&
+        event.event.target.classList.contains('preview-btn')
+      ) {
+        this.loadJsonPreview(event.data.filename);
+      }
+    });
+  }
+
+  loadJsonPreview(filename: string) {
+    this.service.getJsonPreview(filename).subscribe({
+      next: (json) => {
+        this.previewJson = json;
+        this.showModal = true;
+      },
+      error: () => alert('Failed to load JSON preview.')
+    });
+  }
+
+  closeModal() {
+    this.showModal = false;
+    this.previewJson = null;
+  }
+
+  get rowData() {
+    return this.selectedTab === 'import' ? this.importRowData : this.exportRowData;
+  }
+
+  formatSize(params: any) {
+    if (!params.value) return '';
+    const sizeInKB = parseFloat(params.value) / 1024;
+    return `${sizeInKB.toFixed(1)} KB`;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ALTER TABLE import_metadata ADD file_size NUMBER;
 ALTER TABLE import_metadata ADD import_status VARCHAR2(20);
 
